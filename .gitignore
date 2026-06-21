@@ -1,0 +1,365 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains workspace settings, which can be shared
+# and used across multiple projects. However, we recommend that you
+# don't share the .vscode folder with your team because it may contain
+# user-specific configuration.
+#
+# .vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+/coverage/
+.native_artifacts/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Generated files
+**/android/gradle/wrapper/gradle-wrapper.jar
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+
+# iOS/Xcode related
+**/ios/**/*.hmap
+**/ios/**/*.pch
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/*~.nib
+**/ios/**/.last_build_id
+**/ios/**/Breakpoints.xcbkptlist
+**/ios/**/DerivedData
+**/ios/**/Icon?
+**/ios/**/Pods
+**/ios/**/Runner/GeneratedPluginRegistrant.*
+**/ios/**/xcuserdata
+**/ios/**/*.xccheckout
+**/ios/*.app
+**/ios/*.framework
+**/ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+**/ios/*.xcodeproj/xcuserdata/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Podfile.lock
+**/ios/Pods/
+**/ios/.symlinks/
+
+# Exceptions to above rules
+!**/ios/**/default.mode1v3
+!**/ios/**/default.mode2v3
+!**/ios/**/default.pbxuser
+!**/ios/**/default.perspectivev3
+
+# Node.js / JavaScript / TypeScript (backend)
+**/node_modules/
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/package-lock.json
+**/yarn.lock
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
+**/dist/
+**/build/
+
+# Python (backend)
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/*.so
+**/.Python
+**/env/
+**/venv/
+**/ENV/
+**/env.bak/
+**/venv.bak/
+**/pip-log.txt
+**/pip-delete-this-directory.txt
+**/.tox/
+**/.coverage
+**/.coverage.*
+**/.cache
+**/nosetests.xml
+**/coverage.xml
+**/*.cover
+**/*.log
+**/.pytest_cache/
+**/.mypy_cache/
+**/.dmypy.json
+**/dmypy.json
+**/pyre/
+**/.pytype/
+**/.idea/
+**/.vscode/
+**/*.egg-info/
+**/dist/
+**/build/
+**/MANIFEST
+
+# Java / Spring Boot (backend)
+**/target/
+**/*.class
+**/*.jar
+**/*.war
+**/*.ear
+**/hs_err_pid*
+**/.gradle/
+**/build/
+**/gradle/wrapper/gradle-wrapper.jar
+**/gradlew
+**/gradlew.bat
+**/.project
+**/.classpath
+**/.settings/
+**/*.iml
+**/.idea/
+**/.vscode/
+**/.mvn/
+**/mvnw
+**/mvnw.cmd
+**/.metadata/
+**/dependency-reduced-pom.xml
+**/pom.xml.bak
+**/*.releaseBackup
+
+# PHP (backend)
+**/vendor/
+**/composer.lock
+**/.env
+**/.env.*.local
+**/*.php~
+**/*.php.save
+**/*.cache
+**/*.out
+**/*.log
+**/nbproject/
+**/build/
+**/tests/_output/
+**/tests/_support/_generated/
+
+# Ruby / Rails (backend)
+**/.bundle/
+**/vendor/bundle/
+**/log/
+**/tmp/
+**/db/*.sqlite3
+**/db/*.sqlite3-*
+**/public/assets/
+**/.env
+**/.env.local
+**/.env.*.local
+**/config/master.key
+**/config/credentials/*.key
+**/coverage/
+**/node_modules/
+**/yarn-error.log
+**/yarn.lock
+**/package-lock.json
+**/Gemfile.lock
+
+# Go (backend)
+**/*.exe
+**/*.exe~
+**/*.dll
+**/*.so
+**/*.dylib
+**/*.test
+**/*.out
+**/*.prof
+**/.idea/
+**/.vscode/
+**/vendor/
+**/bin/
+**/dist/
+**/coverage.out
+**/coverage.html
+
+# Database files (backend)
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+**/*.mdb
+**/*.accdb
+**/*.pdb
+**/*.sql
+**/.pgdata
+
+# Docker
+**/docker-compose.override.yml
+**/.dockerignore
+**/Dockerfile
+**/*.dockerfile
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.*.local.*
+*.env
+*.env.local
+*.env.*.local
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+*.hprof
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+*.bak
+*.backup
+*.old
+
+# OS generated
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.dmg
+*.iso
+*.bin
+*.exe
+*.msi
+
+# Flutter specific
+**/pubspec.lock  # Keep this if you want to lock versions, otherwise uncomment
+**/pubspec_overrides.yaml
+**/*.g.dart
+**/*.freezed.dart
+**/*.config.dart
+
+# Code coverage
+**/coverage/
+**/lcov.info
+**/*.lst
+
+# Web build
+**/web/
+**/build/web/
+**/build/app/
+
+# Firebase
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+
+# Keys and secrets
+**/*.pem
+**/*.key
+**/*.p12
+**/*.p8
+**/*.jks
+**/*.keystore
+**/*.env
+**/secrets.json
+**/secrets.yaml
+**/config.json
+**/config.yaml
+**/credentials.json
+**/credentials.yaml
+**/app_credentials.dart
+
+# Backend specific - if you have separate backend folder
+backend/**/node_modules/
+backend/**/.env
+backend/**/dist/
+backend/**/build/
+backend/**/target/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/**/vendor/
+backend/**/composer.lock
+backend/**/Gemfile.lock
+backend/**/package-lock.json
+backend/**/yarn.lock
+backend/**/db/*.sqlite3
+backend/**/log/
+backend/**/tmp/
+backend/**/coverage/
+backend/**/.gradle/
+backend/**/.mvn/
+backend/**/mvnw
+backend/**/mvnw.cmd
+backend/**/.idea/
+backend/**/.vscode/
+
+# Frontend specific - if you have separate frontend folder
+frontend/**/node_modules/
+frontend/**/dist/
+frontend/**/build/
+frontend/**/.env
+frontend/**/coverage/
+frontend/**/.next/
+frontend/**/out/
+frontend/**/.nuxt/
+frontend/**/.cache/
+frontend/**/public/
+frontend/**/static/
