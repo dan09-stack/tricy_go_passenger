@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tricygo_passenger/features/auth/auth_screen.dart';
 import '../../core/theme.dart';
 
 enum AppState { destinationSelect, fareSelect, matching, driverEnRoute, tripCompleted }
@@ -13,7 +15,6 @@ class PassengerHomeScreen extends StatefulWidget {
   @override
   State<PassengerHomeScreen> createState() => _PassengerHomeScreenState();
 }
-
 
 class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerProviderStateMixin {
   AppState _currentAppState = AppState.destinationSelect;
@@ -42,6 +43,10 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
   // Simulated nearby tricycles
   final List<LatLng> _nearbyTricycles = [];
 
+  // User info
+  String _userName = 'User';
+  String _userInitial = 'U';
+
   @override
   void initState() {
     super.initState();
@@ -69,6 +74,9 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
         });
       });
 
+    // Load user info
+    _loadUserInfo();
+    
     // Get current location
     _getCurrentLocation();
     
@@ -84,6 +92,77 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
     _destinationController.dispose();
     _pickupController.dispose();
     super.dispose();
+  }
+
+  // Load user info from SharedPreferences
+  Future<void> _loadUserInfo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userName = prefs.getString('userName') ?? 'User';
+      setState(() {
+        _userName = userName;
+        _userInitial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
+      });
+    } catch (e) {
+      debugPrint('Error loading user info: $e');
+    }
+  }
+
+  // Logout function
+  Future<void> _logout() async {
+    try {
+      // Show confirmation dialog
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppTheme.darkGray,
+          title: const Text(
+            'Logout',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: const Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white54),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirm != true) return;
+
+      // Clear SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      
+      // Navigate to auth screen
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const PassengerAuthScreen()),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error during logout: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to logout. Please try again.')),
+        );
+      }
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -273,25 +352,116 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
         backgroundColor: AppTheme.darkGray,
         elevation: 4,
         actions: [
+          // Notification Icon
           IconButton(
             icon: const Icon(Icons.notifications_active, color: AppTheme.primaryYellow),
-            onPressed: () {},
+            onPressed: () {
+              // Show notifications
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('No new notifications')),
+              );
+            },
           ),
-          const Padding(
-            padding: EdgeInsets.only(right: 16, left: 8),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: AppTheme.primaryYellow,
-              child: Text('JD', style: TextStyle(color: AppTheme.darkGray, fontWeight: FontWeight.bold, fontSize: 13)),
+          // Logout Button
+          IconButton(
+            icon: const Icon(Icons.logout_rounded, color: Colors.white70),
+            onPressed: _logout,
+            tooltip: 'Logout',
+          ),
+          // User Avatar with Dropdown
+          PopupMenuButton<String>(
+            offset: const Offset(0, 50),
+            color: AppTheme.darkGray,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Colors.white10),
             ),
-          )
+            onSelected: (value) {
+              if (value == 'profile') {
+                // Navigate to profile
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Profile feature coming soon!')),
+                );
+              } else if (value == 'history') {
+                // Navigate to ride history
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ride history feature coming soon!')),
+                );
+              } else if (value == 'settings') {
+                // Navigate to settings
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Settings feature coming soon!')),
+                );
+              } else if (value == 'logout') {
+                _logout();
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.only(right: 8, left: 8),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: AppTheme.primaryYellow,
+                child: Text(
+                  _userInitial,
+                  style: const TextStyle(
+                    color: AppTheme.darkGray,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person_outline, color: Colors.white70, size: 20),
+                    SizedBox(width: 12),
+                    Text('Profile', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'history',
+                child: Row(
+                  children: [
+                    Icon(Icons.history, color: Colors.white70, size: 20),
+                    SizedBox(width: 12),
+                    Text('Ride History', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_outlined, color: Colors.white70, size: 20),
+                    SizedBox(width: 12),
+                    Text('Settings', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout_rounded, color: Colors.red, size: 20),
+                    SizedBox(width: 12),
+                    Text('Logout', style: TextStyle(color: Colors.red)),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       body: Stack(
         children: [
           // REAL MAP - FlutterMap with OpenStreetMap
           FlutterMap(
-            mapController: _mapController,  // Pass the controller directly
+            mapController: _mapController,
             options: MapOptions(
               initialCenter: _currentLocation,
               initialZoom: 15.0,
