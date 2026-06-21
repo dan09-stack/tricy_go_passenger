@@ -1,0 +1,18 @@
+{
+  "name": "tricygo-frontend-admin",
+  "version": "1.0.0",
+  "description": "TricyGo Administrative Dashboard & Frontends",
+  "main": "src/index.tsx",
+  "scripts": {
+    "start": "echo 'Frontend setup complete. Ready to link application runtime frameworks.'"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.4.5"
+  }
+}
