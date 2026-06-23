@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tricygo_passenger/core/theme.dart';
-import 'package:tricygo_passenger/features/auth/auth_screen.dart';
-import 'package:tricygo_passenger/features/auth/presentation/state/auth_state.dart';
+import 'package:tricygo_passenger/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tricygo_passenger/features/auth/presentation/widgets/auth_button.dart';
 import 'package:tricygo_passenger/features/auth/presentation/widgets/auth_form_field.dart';
+import 'package:tricygo_passenger/features/home/home_screen.dart';
 
 class AuthRegistrationBody extends ConsumerStatefulWidget {
   const AuthRegistrationBody({super.key});
@@ -58,16 +58,16 @@ class _AuthRegistrationBodyState extends ConsumerState<AuthRegistrationBody> {
                   child: Icon(
                     Icons.person_add_alt_1_rounded,
                     size: 38,
-                    color: AppTheme.primaryYellow.withOpacity(0.8),
+                    color: AppTheme.primaryYellow.withValues(alpha: 0.8),
                   ),
                 ),
-                Positioned(
+                const Positioned(
                   bottom: 0,
                   right: 0,
                   child: CircleAvatar(
                     radius: 14,
                     backgroundColor: AppTheme.primaryYellow,
-                    child: const Icon(
+                    child:  Icon(
                       Icons.camera_alt,
                       size: 14,
                       color: AppTheme.darkGray,
@@ -96,7 +96,7 @@ class _AuthRegistrationBodyState extends ConsumerState<AuthRegistrationBody> {
           const SizedBox(height: 48),
           AuthButton(
             label: 'Complete Registration',
-            isLoading: AuthState.isLoading,
+            isLoading: authState.isLoading,
             onPressed: () async {
               final name = _nameController.text.trim();
               if (name.isEmpty) {

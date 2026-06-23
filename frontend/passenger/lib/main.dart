@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tricygo_passenger/features/auth/presentation/screens/passenger_auth_screen.dart';
 import 'core/theme.dart';
-import 'features/auth/auth_screen.dart';
 
 void main() {
   runApp(

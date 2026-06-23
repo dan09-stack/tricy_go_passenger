@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import "package:tricygo_passenger/core/theme.dart";
+import "package:tricygo_passenger/features/auth/presentation/providers/auth_providers.dart";
 import "package:tricygo_passenger/features/auth/presentation/state/auth_state.dart";
 import "package:tricygo_passenger/features/auth/presentation/widgets/auth_otp_verification_body.dart";
 import "package:tricygo_passenger/features/auth/presentation/widgets/auth_phone_input_body.dart";
+import "package:tricygo_passenger/features/auth/presentation/widgets/auth_registration_body.dart";
 import "package:tricygo_passenger/features/auth/presentation/widgets/auth_welcome_body.dart";
 import "package:tricygo_passenger/features/home/home_screen.dart";
-import ../providers/auth_providers.dart;
-import ../state/auth_state.dart;
-import ../widgets/auth_welcome_body.dart;
-import ../widgets/auth_phone_input_body.dart;
-import ../widgets/auth_otp_verification_body.dart;
-import ../widgets/auth_registration_body.dart;
-import ../../../../core/theme.dart;
+
 
 class PassengerAuthScreen extends ConsumerStatefulWidget {
   const PassengerAuthScreen({super.key});

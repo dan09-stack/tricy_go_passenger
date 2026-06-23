@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tricygo_passenger/features/auth/auth_screen.dart';
+import 'package:tricygo_passenger/features/auth/presentation/screens/passenger_auth_screen.dart';
 import '../../core/theme.dart';
 
 enum AppState { destinationSelect, fareSelect, matching, driverEnRoute, tripCompleted }

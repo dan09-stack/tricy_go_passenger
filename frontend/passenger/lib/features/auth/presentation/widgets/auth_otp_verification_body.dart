@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tricygo_passenger/features/auth/auth_screen.dart';
-
+import 'package:tricygo_passenger/core/theme.dart';
+import 'package:tricygo_passenger/features/auth/presentation/providers/auth_providers.dart';
+import 'package:tricygo_passenger/features/auth/presentation/state/auth_state.dart';
+import 'package:tricygo_passenger/features/auth/presentation/widgets/auth_button.dart';
 
 class AuthOtpVerificationBody extends ConsumerStatefulWidget {
   const AuthOtpVerificationBody({super.key});
@@ -74,9 +76,36 @@ class _AuthOtpVerificationBodyState extends ConsumerState<AuthOtpVerificationBod
         Center(
           child: TextButton(
             onPressed: () {
+              // Resend OTP logic (mock)
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('OTP resent successfully!')),
               );
             },
             child: const Text(
-              'Didn't
+              'Didn\'t receive SMS? Resend code',
+              style: TextStyle(color: AppTheme.primaryYellow),
+            ),
+          ),
+        ),
+        const Spacer(),
+        AuthButton(
+          label: 'Verify & Continue',
+          isLoading: authState.isLoading,
+          buttonColor: AppTheme.secondaryGreen,
+          textColor: Colors.white,
+          onPressed: () async {
+            final otp = _otpController.text.trim();
+            try {
+              await authNotifier.verifyOtp(otp);
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(e.toString())),
+              );
+            }
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}

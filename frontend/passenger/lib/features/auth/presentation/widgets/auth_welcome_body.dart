@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tricygo_passenger/core/theme.dart';
+import 'package:tricygo_passenger/features/auth/auth_screen.dart';
+import 'package:tricygo_passenger/features/auth/presentation/providers/auth_providers.dart';
+import 'package:tricygo_passenger/features/auth/presentation/state/auth_state.dart';
+import 'package:tricygo_passenger/features/auth/presentation/widgets/auth_button.dart';
 
 
 class AuthWelcomeBody extends ConsumerWidget {
@@ -34,9 +39,9 @@ class AuthWelcomeBody extends ConsumerWidget {
         ),
         const SizedBox(height: 28),
         const Text(
-          'TricyGo\,
+          'TricyGo',
           style: TextStyle(
-            fontFamily: 'Poppins\,
+            fontFamily: 'Poppins',
             fontSize: 40,
             fontWeight: FontWeight.bold,
             color: AppTheme.primaryYellow,
@@ -44,7 +49,7 @@ class AuthWelcomeBody extends ConsumerWidget {
           ),
         ),
         const Text(
-          'Your Local Ride, Simplified.\,
+          'Your Local Ride, Simplified.',
           style: TextStyle(
             fontSize: 16,
             color: Colors.white54,
@@ -53,26 +58,26 @@ class AuthWelcomeBody extends ConsumerWidget {
         ),
         const Spacer(),
         AuthButton(
-          label: 'Get Started\,
+          label: 'Get Started',
           icon: Icons.arrow_forward_rounded,
           onPressed: () => authNotifier.transitionTo(AuthScreenState.phoneInput),
         ),
         const SizedBox(height: 16),
         const Text(
-          'By continuing, you agree to our Terms of Service & Privacy Policy.\,
+          'By continuing, you agree to our Terms of Service & Privacy Policy.',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 11, color: Colors.white24),
         ),
         if (true)
           TextButton(
             onPressed: () {
-              authNotifier.setPhoneNumber('9171234567\);
-              authNotifier.setFullName('Test User\);
-              authNotifier.setEmail('test@example.com\);
+              authNotifier.setPhoneNumber('9171234567');
+              authNotifier.setFullName('Test User');
+              authNotifier.setEmail('test@example.com');
               authNotifier.completeRegistration();
             },
             child: const Text(
-              'Skip Auth (Dev Only)\,
+              'Skip Auth (Dev Only)',
               style: TextStyle(color: Colors.white24, fontSize: 12),
             ),
           ),
