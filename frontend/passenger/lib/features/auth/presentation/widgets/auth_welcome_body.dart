@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tricygo_passenger/core/theme.dart';
-import 'package:tricygo_passenger/features/auth/auth_screen.dart';
 import 'package:tricygo_passenger/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tricygo_passenger/features/auth/presentation/state/auth_state.dart';
 import 'package:tricygo_passenger/features/auth/presentation/widgets/auth_button.dart';
-
+import 'package:tricygo_passenger/features/home/home_screen.dart';
 
 class AuthWelcomeBody extends ConsumerWidget {
   const AuthWelcomeBody({super.key});
@@ -68,13 +67,35 @@ class AuthWelcomeBody extends ConsumerWidget {
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 11, color: Colors.white24),
         ),
+        // Development skip button (remove in production)
         if (true)
           TextButton(
-            onPressed: () {
-              authNotifier.setPhoneNumber('9171234567');
-              authNotifier.setFullName('Test User');
-              authNotifier.setEmail('test@example.com');
-              authNotifier.completeRegistration();
+            onPressed: () async {
+              try {
+                // Set test user data
+                authNotifier.setPhoneNumber('9171234567');
+                authNotifier.setFullName('Test User');
+                authNotifier.setEmail('test@example.com');
+                
+                // Complete registration
+                await authNotifier.completeRegistration();
+                
+                // Navigate to home screen
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => const PassengerHomeScreen(),
+                    ),
+                  );
+                }
+              } catch (e) {
+                // Show error message
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Skip auth failed: ${e.toString()}')),
+                  );
+                }
+              }
             },
             child: const Text(
               'Skip Auth (Dev Only)',
