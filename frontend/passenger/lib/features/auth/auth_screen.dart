@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme.dart';
 import '../home/home_screen.dart';
 
+// Auth State Provider
+final authStateProvider = StateProvider<bool>((ref) => false);
+
 enum AuthScreenState { welcome, phoneInput, otpVerification, signUpRegistration }
 
-class PassengerAuthScreen extends StatefulWidget {
+class PassengerAuthScreen extends ConsumerStatefulWidget {
   const PassengerAuthScreen({super.key});
 
   @override
-  State<PassengerAuthScreen> createState() => _PassengerAuthScreenState();
+  ConsumerState<PassengerAuthScreen> createState() => _PassengerAuthScreenState();
 }
 
-class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTickerProviderStateMixin {
+class _PassengerAuthScreenState extends ConsumerState<PassengerAuthScreen> 
+    with SingleTickerProviderStateMixin {
+  
   AuthScreenState _currentAuthState = AuthScreenState.welcome;
   
   final TextEditingController _phoneController = TextEditingController();
@@ -29,6 +36,9 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
       vsync: this,
       duration: const Duration(milliseconds: 400),
     )..forward();
+
+    // Check if user is already authenticated
+    _checkAuthentication();
   }
 
   @override
@@ -39,6 +49,72 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
     _nameController.dispose();
     _emailController.dispose();
     super.dispose();
+  }
+
+  // Check authentication status using SharedPreferences
+  Future<void> _checkAuthentication() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isAuthenticated = prefs.getBool('isAuthenticated') ?? false;
+      final userToken = prefs.getString('userToken');
+      
+      if (isAuthenticated && userToken != null && mounted) {
+        // If authenticated and token exists, navigate to home screen
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const PassengerHomeScreen()),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error checking authentication: $e');
+    }
+  }
+
+  // Handle successful authentication
+  Future<void> _handleAuthenticationSuccess() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Save authentication state
+      await prefs.setBool('isAuthenticated', true);
+      await prefs.setString('userToken', 'mock_token_${DateTime.now().millisecondsSinceEpoch}');
+      await prefs.setString('userPhone', _phoneController.text.trim());
+      await prefs.setString('userName', _nameController.text.trim());
+      await prefs.setString('userEmail', _emailController.text.trim());
+      
+      // Update Riverpod state
+      ref.read(authStateProvider.notifier).state = true;
+      
+      // Navigate to home screen
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const PassengerHomeScreen()),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error saving authentication: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to complete registration. Please try again.')),
+        );
+      }
+    }
+  }
+
+  // Handle logout (optional)
+  Future<void> _logout() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      ref.read(authStateProvider.notifier).state = false;
+      
+      if (mounted) {
+        setState(() {
+          _currentAuthState = AuthScreenState.welcome;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error logging out: $e');
+    }
   }
 
   void _transitionTo(AuthScreenState newState) {
@@ -155,6 +231,21 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 11, color: Colors.white24),
         ),
+        // Development skip button (remove in production)
+        if (true) 
+          TextButton(
+            onPressed: () {
+              // Skip authentication for development
+              _phoneController.text = '9171234567';
+              _nameController.text = 'Test User';
+              _emailController.text = 'test@example.com';
+              _handleAuthenticationSuccess();
+            },
+            child: const Text(
+              'Skip Auth (Dev Only)',
+              style: TextStyle(color: Colors.white24, fontSize: 12),
+            ),
+          ),
       ],
     );
   }
@@ -171,11 +262,16 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
         const SizedBox(height: 24),
         const Text(
           'Enter your mobile number',
-          style: TextStyle(fontFamily: 'Poppins', fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontFamily: 'Poppins', 
+            fontSize: 24, 
+            fontWeight: FontWeight.bold, 
+            color: Colors.white
+          ),
         ),
         const SizedBox(height: 8),
         const Text(
-          'We\'ll send a secure single-use verification code code via SMS text.',
+          'We\'ll send a secure single-use verification code via SMS text.',
           style: TextStyle(fontSize: 14, color: Colors.white54),
         ),
         const SizedBox(height: 32),
@@ -199,7 +295,11 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
                 child: TextField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                  style: const TextStyle(
+                    fontSize: 17, 
+                    fontWeight: FontWeight.bold, 
+                    letterSpacing: 1.5
+                  ),
                   decoration: const InputDecoration(
                     hintText: '917 123 4567',
                     hintStyle: TextStyle(color: Colors.white24, letterSpacing: 1.0),
@@ -234,15 +334,26 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
                     });
                   },
             child: _isLoading
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppTheme.darkGray, strokeWidth: 2))
-                : const Text('Send Verification Code', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ? const SizedBox(
+                    width: 24, 
+                    height: 24, 
+                    child: CircularProgressIndicator(
+                      color: AppTheme.darkGray, 
+                      strokeWidth: 2
+                    )
+                  )
+                : const Text(
+                    'Send Verification Code', 
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                  ),
           ),
         ),
+        const SizedBox(height: 16),
       ],
     );
   }
 
-  // SCREEN 3: OTP OTP CODE VERIFICATION
+  // SCREEN 3: OTP CODE VERIFICATION
   Widget _buildOtpVerificationBody() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +365,12 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
         const SizedBox(height: 24),
         const Text(
           'Verify code token',
-          style: TextStyle(fontFamily: 'Poppins', fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontFamily: 'Poppins', 
+            fontSize: 24, 
+            fontWeight: FontWeight.bold, 
+            color: Colors.white
+          ),
         ),
         const SizedBox(height: 8),
         Text(
@@ -266,7 +382,12 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
           controller: _otpController,
           keyboardType: TextInputType.number,
           textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 12.0, color: AppTheme.primaryYellow),
+          style: const TextStyle(
+            fontSize: 28, 
+            fontWeight: FontWeight.bold, 
+            letterSpacing: 12.0, 
+            color: AppTheme.primaryYellow
+          ),
           maxLength: 6,
           decoration: InputDecoration(
             counterText: '',
@@ -283,8 +404,16 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
         const SizedBox(height: 20),
         Center(
           child: TextButton(
-            onPressed: () {},
-            child: const Text('Didn\'t receive SMS? Resend code', style: TextStyle(color: AppTheme.primaryYellow)),
+            onPressed: () {
+              // Resend OTP logic here
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('OTP resent successfully!')),
+              );
+            },
+            child: const Text(
+              'Didn\'t receive SMS? Resend code', 
+              style: TextStyle(color: AppTheme.primaryYellow)
+            ),
           ),
         ),
         const Spacer(),
@@ -302,19 +431,31 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
                 : () {
                     if (_otpController.text.trim() != '123456') {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invalid code token template. Please enter 123456.')),
+                        const SnackBar(content: Text('Invalid code token. Please enter 123456.')),
                       );
                       return;
                     }
                     _simulateNetworkAction(() {
+                      // After OTP verification, go to registration
                       _transitionTo(AuthScreenState.signUpRegistration);
                     });
                   },
             child: _isLoading
-                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text('Verify & Continue', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                ? const SizedBox(
+                    width: 24, 
+                    height: 24, 
+                    child: CircularProgressIndicator(
+                      color: Colors.white, 
+                      strokeWidth: 2
+                    )
+                  )
+                : const Text(
+                    'Verify & Continue', 
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                  ),
           ),
         ),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -328,7 +469,12 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
           const SizedBox(height: 16),
           const Text(
             'Create your profile',
-            style: TextStyle(fontFamily: 'Poppins', fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(
+              fontFamily: 'Poppins', 
+              fontSize: 26, 
+              fontWeight: FontWeight.bold, 
+              color: Colors.white
+            ),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -344,7 +490,11 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
                 CircleAvatar(
                   radius: 46,
                   backgroundColor: AppTheme.darkGray,
-                  child: Icon(Icons.person_add_alt_1_rounded, size: 38, color: AppTheme.primaryYellow.withOpacity(0.8)),
+                  child: Icon(
+                    Icons.person_add_alt_1_rounded, 
+                    size: 38, 
+                    color: AppTheme.primaryYellow.withOpacity(0.8)
+                  ),
                 ),
                 Positioned(
                   bottom: 0,
@@ -362,11 +512,20 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
 
           // Fields Form Grid
           _buildFormLabel('Full Name'),
-          _buildFormTextField(_nameController, 'John Doe', Icons.person_outline),
+          _buildFormTextField(
+            _nameController, 
+            'John Doe', 
+            Icons.person_outline
+          ),
           const SizedBox(height: 18),
           
           _buildFormLabel('Email Address (Optional)'),
-          _buildFormTextField(_emailController, 'john.doe@example.com', Icons.mail_outline, inputType: TextInputType.emailAddress),
+          _buildFormTextField(
+            _emailController, 
+            'john.doe@example.com', 
+            Icons.mail_outline, 
+            inputType: TextInputType.emailAddress
+          ),
           
           const SizedBox(height: 48),
           SizedBox(
@@ -388,16 +547,25 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
                         return;
                       }
                       _simulateNetworkAction(() {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(builder: (context) => const PassengerHomeScreen()),
-                        );
+                        _handleAuthenticationSuccess();
                       });
                     },
               child: _isLoading
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: AppTheme.darkGray, strokeWidth: 2))
-                  : const Text('Complete Registration', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ? const SizedBox(
+                      width: 24, 
+                      height: 24, 
+                      child: CircularProgressIndicator(
+                        color: AppTheme.darkGray, 
+                        strokeWidth: 2
+                      )
+                    )
+                  : const Text(
+                      'Complete Registration', 
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                    ),
             ),
           ),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -408,12 +576,22 @@ class _PassengerAuthScreenState extends State<PassengerAuthScreen> with SingleTi
       padding: const EdgeInsets.only(left: 4, bottom: 8),
       child: Text(
         label,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white60, letterSpacing: 0.5),
+        style: const TextStyle(
+          fontWeight: FontWeight.w600, 
+          fontSize: 13, 
+          color: Colors.white60, 
+          letterSpacing: 0.5
+        ),
       ),
     );
   }
 
-  Widget _buildFormTextField(TextEditingController controller, String placeholder, IconData icon, {TextInputType inputType = TextInputType.text}) {
+  Widget _buildFormTextField(
+    TextEditingController controller, 
+    String placeholder, 
+    IconData icon, {
+    TextInputType inputType = TextInputType.text
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
