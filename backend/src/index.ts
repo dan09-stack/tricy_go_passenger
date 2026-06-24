@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -10,6 +10,8 @@ import { authMiddleware } from './middleware/auth.middleware';
 import { SocketService } from './services/socket.service';
 import { authRouter } from './routes/auth.route';
 import { rideRouter } from './routes/ride.route';
+import { errorHandler } from './middleware/error.middleware';
+import { userRouter } from './routes/user.route';
 
 dotenv.config();
 
@@ -49,8 +51,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/rides', authMiddleware, rideRouter);
 app.use('/api/users', authMiddleware, userRouter);
 
-// Health check
-app.get('/health', (req, res) => {
+// Health check - fixed by prefixing unused parameter with underscore
+app.get('/health', (_req: Request, res: Response) => {
   res.json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),

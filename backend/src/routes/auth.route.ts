@@ -1,5 +1,5 @@
-import express from 'express';
-import { body, validationResult } from 'express-validator';
+import express, { Request, Response } from 'express';
+import { body, validationResult, ValidationChain } from 'express-validator';
 import { AuthController } from '../controllers/auth.controller';
 import { rateLimit } from 'express-rate-limit';
 
@@ -20,31 +20,54 @@ const verifyLimiter = rateLimit({
   message: 'Too many verification attempts. Please wait 5 minutes.',
 });
 
+// Wrapper function to handle validation and types
+const validate = (validations: ValidationChain[]) => {
+  return async (req: Request, res: Response, next: any) => {
+    await Promise.all(validations.map(validation => validation.run(req)));
+    
+    const errors = validationResult(req);
+    if (errors.isEmpty()) {
+      return next();
+    }
+    
+    res.status(400).json({ errors: errors.array() });
+  };
+};
+
+// Wrapper for controller methods
+const asyncHandler = (fn: (req: Request, res: Response) => Promise<void>) => {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      await fn(req, res);
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
+  };
+};
+
 // Send OTP
 router.post(
   '/send-otp',
   otpLimiter,
-  [
+  validate([
     body('phoneNumber')
       .isString()
       .withMessage('Phone number is required')
       .matches(/^[0-9]{10,15}$/)
       .withMessage('Invalid phone number format'),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    await authController.sendOTP(req, res);
-  }
+  ]),
+  asyncHandler(authController.sendOTP.bind(authController))
 );
 
 // Verify OTP and login/register
 router.post(
   '/verify-otp',
   verifyLimiter,
-  [
+  validate([
     body('phoneNumber')
       .isString()
       .withMessage('Phone number is required'),
@@ -63,36 +86,22 @@ router.post(
       .optional()
       .isEmail()
       .withMessage('Invalid email format'),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    await authController.verifyOTP(req, res);
-  }
+  ]),
+  asyncHandler(authController.verifyOTP.bind(authController))
 );
 
 // Refresh token
 router.post(
   '/refresh-token',
-  [
+  validate([
     body('refreshToken')
       .isString()
       .withMessage('Refresh token is required'),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    await authController.refreshToken(req, res);
-  }
+  ]),
+  asyncHandler(authController.refreshToken.bind(authController))
 );
 
 // Logout
-router.post('/logout', async (req, res) => {
-  await authController.logout(req, res);
-});
+router.post('/logout', asyncHandler(authController.logout.bind(authController)));
 
 export { router as authRouter };

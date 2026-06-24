@@ -77,11 +77,20 @@ export class AuthController {
         });
       }
       
-      // Generate JWT
+      // Generate JWT - FIXED with proper typing
+      const secret: string = process.env.JWT_SECRET || 'secret';
+      const expiresIn: string | number = process.env.JWT_EXPIRES_IN || '7d';
+      
+      const payload = { 
+        userId: user._id.toString(), 
+        phoneNumber: user.phoneNumber 
+      };
+      
+      // Use type assertion to help TypeScript
       const token = jwt.sign(
-        { userId: user._id, phoneNumber: user.phoneNumber },
-        process.env.JWT_SECRET || 'secret',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        payload, 
+        secret, 
+        { expiresIn: expiresIn } as jwt.SignOptions
       );
       
       res.json({
@@ -112,8 +121,20 @@ export class AuthController {
       const { refreshToken } = req.body;
       
       // Implement refresh token logic
-      // For now, we'll just generate a new token
-      const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET || 'secret') as any;
+      const secret: string = process.env.JWT_SECRET || 'secret';
+      const expiresIn: string | number = process.env.JWT_EXPIRES_IN || '7d';
+      
+      // Verify the refresh token
+      const decoded = jwt.verify(refreshToken, secret) as jwt.JwtPayload;
+      
+      if (!decoded || !decoded.userId) {
+        res.status(401).json({
+          success: false,
+          message: 'Invalid refresh token',
+        });
+        return;
+      }
+      
       const user = await User.findById(decoded.userId);
       
       if (!user) {
@@ -124,10 +145,16 @@ export class AuthController {
         return;
       }
       
+      const payload = { 
+        userId: user._id.toString(), 
+        phoneNumber: user.phoneNumber 
+      };
+      
+      // Use type assertion to help TypeScript
       const token = jwt.sign(
-        { userId: user._id, phoneNumber: user.phoneNumber },
-        process.env.JWT_SECRET || 'secret',
-        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+        payload, 
+        secret, 
+        { expiresIn: expiresIn } as jwt.SignOptions
       );
       
       res.json({
@@ -142,7 +169,7 @@ export class AuthController {
     }
   }
 
-  async logout(req: Request, res: Response): Promise<void> {
+  async logout(_req: Request, res: Response): Promise<void> {
     // In a stateless JWT system, logout is handled client-side
     // This endpoint can be used for token blacklisting if needed
     res.json({

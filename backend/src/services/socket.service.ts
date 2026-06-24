@@ -1,5 +1,4 @@
 import { Server as SocketServer, Socket } from 'socket.io';
-import { User } from '../models/User';
 import { Ride } from '../models/Ride';
 
 interface AuthenticatedSocket extends Socket {
