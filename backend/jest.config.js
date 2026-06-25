@@ -13,4 +13,7 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   testTimeout: 10000,
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
 };

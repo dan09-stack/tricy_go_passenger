@@ -3,7 +3,8 @@ import { Request, Response } from 'express';
 import { User } from '../models/User';
 
 export class UserController {
-  async getAllUsers(req: Request, res: Response): Promise<void> {
+  // Prefix unused parameter with underscore
+  async getAllUsers(_req: Request, res: Response): Promise<void> {
     try {
       const users = await User.find().select('-__v');
       res.json({

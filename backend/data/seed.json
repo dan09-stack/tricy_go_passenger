@@ -1,0 +1,35 @@
+{
+  "users": [
+    {
+      "id": "user-1",
+      "phoneNumber": "+1234567890",
+      "fullName": "John Doe",
+      "email": "john@example.com",
+      "isVerified": true,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "rides": [
+    {
+      "id": "ride-1",
+      "passengerId": "user-1",
+      "driverId": "driver-1",
+      "status": "completed",
+      "pickupLocation": {
+        "lat": 14.5995,
+        "lng": 120.9842,
+        "address": "123 Main St"
+      },
+      "dropoffLocation": {
+        "lat": 14.6025,
+        "lng": 120.9872,
+        "address": "456 Central Ave"
+      },
+      "passengerCount": 2,
+      "totalFare": 250.50,
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "updatedAt": "2026-01-01T00:00:00.000Z"
+    }
+  ]
+}
