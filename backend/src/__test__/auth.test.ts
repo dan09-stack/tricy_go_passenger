@@ -75,7 +75,6 @@ describe('Auth Routes', () => {
       await OTP.create({
         phoneNumber: '1234567890',
         code: otpCode,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
         isUsed: false
       });
 

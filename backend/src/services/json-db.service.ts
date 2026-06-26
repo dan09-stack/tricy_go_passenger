@@ -1,7 +1,6 @@
-// src/services/json-db.service.ts
 import fs from 'fs/promises';
 import path from 'path';
-import { v4 as uuidv4 } from 'uuid'; 
+import crypto from 'crypto';
 
 export interface JsonDBOptions {
   filePath?: string;
@@ -17,7 +16,7 @@ export class JsonDB {
   private initialized: boolean = false;
 
   constructor(options: JsonDBOptions = {}) {
-    this.filePath = options.filePath || path.join(__dirname, '../../data/db.json');
+    this.filePath = options.filePath || path.join(process.cwd(), 'data/db.json');
     this.pretty = options.pretty ?? true;
     this.indent = options.indent ?? 2;
   }
@@ -77,9 +76,10 @@ export class JsonDB {
     }
   }
 
-  // Collection methods
   async getCollection<T>(name: string): Promise<T[]> {
-    if (!this.initialized) await this.initialize();
+    if (!this.initialized) {
+      await this.initialize();
+    }
     return this.data[name] || [];
   }
 
@@ -103,31 +103,33 @@ export class JsonDB {
     );
   }
 
-  async insertOne<T extends { id?: string }>(collection: string, item: T): Promise<T> {
-    if (!this.initialized) await this.initialize();
+  // Removed the constraint T extends { id?: string } - now accepts any type
+  async insertOne<T>(collection: string, item: T): Promise<T> {
+    if (!this.initialized) {
+      await this.initialize();
+    }
     
     if (!this.data[collection]) {
       this.data[collection] = [];
     }
     
     // Add ID if not present
-    if (!item.id) {
-      item.id = uuidv4();
+    const newItem: any = { ...item };
+    if (!newItem.id) {
+      newItem.id = crypto.randomUUID();
     }
     
     // Add timestamps
-    const newItem = {
-      ...item,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    newItem.createdAt = new Date().toISOString();
+    newItem.updatedAt = new Date().toISOString();
     
     this.data[collection].push(newItem);
     await this.save();
     return newItem as T;
   }
 
-  async updateOne<T extends { id: string }>(collection: string, id: string, updates: Partial<T>): Promise<T | null> {
+  // Removed the constraint T extends { id: string } - now accepts any type
+  async updateOne<T>(collection: string, id: string, updates: Partial<T>): Promise<T | null> {
     const items = await this.getCollection<T>(collection);
     const index = items.findIndex(item => (item as any).id === id);
     
@@ -165,7 +167,6 @@ export class JsonDB {
     await this.save();
   }
 
-  // Migration helper
   exportToJSON(): string {
     return JSON.stringify(this.data, null, this.indent);
   }
@@ -179,5 +180,16 @@ export class JsonDB {
       console.error('❌ Failed to import JSON:', error);
       throw error;
     }
+  }
+
+  // Helper method to get the current data (for debugging)
+  getData(): any {
+    return this.data;
+  }
+
+  // Helper method to get collection count
+  async getCollectionCount(collection: string): Promise<number> {
+    const items = await this.getCollection(collection);
+    return items.length;
   }
 }

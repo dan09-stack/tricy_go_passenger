@@ -1,10 +1,41 @@
 {
-  "users": [],
-  "rides": [],
-  "drivers": [],
-  "otps": [],
-  "_meta": {
-    "created": "2026-06-25T13:28:33.716Z",
-    "version": "1.0.0"
-  }
+  "otps": [
+    {
+      "phoneNumber": "09123456789",
+      "code": "123456",
+      "expiresAt": "2026-06-26T22:17:13.131Z",
+      "isUsed": true,
+      "attempts": 0,
+      "id": "4aa23899-f413-4336-a64e-9c491a4c907d",
+      "createdAt": "2026-06-26T22:12:13.136Z",
+      "updatedAt": "2026-06-26T22:12:19.168Z"
+    }
+  ],
+  "users": [
+    {
+      "phoneNumber": "09123456789",
+      "fullName": "John Doe",
+      "isVerified": true,
+      "rating": 0,
+      "totalRides": 0,
+      "isDriver": false,
+      "driverProfile": {
+        "vehicleType": "",
+        "plateNumber": "",
+        "isAvailable": false,
+        "location": {
+          "lat": 0,
+          "lng": 0
+        }
+      },
+      "preferences": {
+        "notifications": true,
+        "emailUpdates": true,
+        "smsUpdates": true
+      },
+      "id": "3a7cf134-ccdd-43ee-8e42-412f70eb3e3e",
+      "createdAt": "2026-06-26T22:12:19.207Z",
+      "updatedAt": "2026-06-26T22:12:19.207Z"
+    }
+  ]
 }

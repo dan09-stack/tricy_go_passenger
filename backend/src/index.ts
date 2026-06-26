@@ -71,6 +71,8 @@ app.use(errorHandler);
 // Connect to database and start server
 const startServer = async () => {
   try {
+    // Connect to database (JSON or MongoDB)
+    const dbAdapter = createDatabaseAdapter();
     await dbAdapter.connect();
     
     const PORT = process.env.PORT || 3000;

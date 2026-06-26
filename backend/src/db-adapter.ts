@@ -1,4 +1,3 @@
-// src/db-adapter.ts
 import { JsonDB } from './services/json-db.service';
 import mongoose from 'mongoose';
 import { ObjectId } from 'mongodb';
@@ -9,8 +8,8 @@ export interface DatabaseAdapter {
   getCollection<T>(name: string): Promise<T[]>;
   findOne<T>(collection: string, query: any): Promise<T | null>;
   findMany<T>(collection: string, query: any): Promise<T[]>;
-  insertOne<T extends { id?: string }>(collection: string, data: T): Promise<T>;
-  updateOne<T extends { id: string }>(collection: string, id: string, data: Partial<T>): Promise<T | null>;
+  insertOne<T>(collection: string, data: any): Promise<T>;  // Removed constraint
+  updateOne<T>(collection: string, id: string, data: Partial<T>): Promise<T | null>;
   deleteOne(collection: string, id: string): Promise<boolean>;
 }
 
@@ -24,10 +23,11 @@ export class JsonDBAdapter implements DatabaseAdapter {
 
   async connect(): Promise<void> {
     await this.db.initialize();
+    console.log('✅ JSON Database connected');
   }
 
   async disconnect(): Promise<void> {
-    // Nothing to do for JSON DB
+    console.log('✅ JSON Database disconnected');
   }
 
   async getCollection<T>(name: string): Promise<T[]> {
@@ -42,12 +42,15 @@ export class JsonDBAdapter implements DatabaseAdapter {
     return this.db.findMany<T>(collection, query);
   }
 
-  async insertOne<T extends { id?: string }>(collection: string, data: T): Promise<T> {
-    return this.db.insertOne<T>(collection, data);
+  async insertOne<T>(collection: string, data: any): Promise<T> {
+    console.log(`📝 Inserting into ${collection}:`, data);
+    const result = await this.db.insertOne(collection, data);
+    console.log(`✅ Inserted into ${collection}:`, result);
+    return result as T;
   }
 
-  async updateOne<T extends { id: string }>(collection: string, id: string, data: Partial<T>): Promise<T | null> {
-    return this.db.updateOne<T>(collection, id, data);
+  async updateOne<T>(collection: string, id: string, data: Partial<T>): Promise<T | null> {
+    return this.db.updateOne(collection, id, data);
   }
 
   async deleteOne(collection: string, id: string): Promise<boolean> {
@@ -116,16 +119,13 @@ export class MongoDBAdapter implements DatabaseAdapter {
     return coll.find(query).toArray() as Promise<T[]>;
   }
 
-  async insertOne<T extends { id?: string }>(collection: string, data: T): Promise<T> {
+  async insertOne<T>(collection: string, data: any): Promise<T> {
     const coll = mongoose.connection.collection(collection);
-    // Remove id if present (MongoDB uses _id)
-    const { id, ...rest } = data as any;
-    const result = await coll.insertOne(rest);
-    // Return the original data with the MongoDB _id
+    const result = await coll.insertOne(data);
     return { ...data, _id: result.insertedId } as T;
   }
 
-  async updateOne<T extends { id: string }>(collection: string, id: string, data: Partial<T>): Promise<T | null> {
+  async updateOne<T>(collection: string, id: string, data: Partial<T>): Promise<T | null> {
     const coll = mongoose.connection.collection(collection);
     const result = await coll.findOneAndUpdate(
       { _id: new ObjectId(id) },
@@ -133,12 +133,10 @@ export class MongoDBAdapter implements DatabaseAdapter {
       { returnDocument: 'after' }
     );
     
-    // Check if result has a value property (MongoDB driver v4+)
     if (result && 'value' in result) {
       return result.value as T | null;
     }
     
-    // For older versions or different return types
     return result as unknown as T | null;
   }
 
@@ -153,11 +151,12 @@ export class MongoDBAdapter implements DatabaseAdapter {
 export function createDatabaseAdapter(): DatabaseAdapter {
   const useMongoDB = process.env.USE_MONGODB === 'true';
   
+  console.log(`🔍 USE_MONGODB = "${process.env.USE_MONGODB}"`);
+  console.log(`📦 Using ${useMongoDB ? 'MongoDB' : 'JSON'} adapter`);
+  
   if (useMongoDB) {
-    console.log('📦 Using MongoDB adapter');
     return new MongoDBAdapter();
   } else {
-    console.log('📦 Using JSON file adapter');
     return new JsonDBAdapter();
   }
 }

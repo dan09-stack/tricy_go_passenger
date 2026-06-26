@@ -1,5 +1,5 @@
 import { Server as SocketServer, Socket } from 'socket.io';
-import { Ride } from '../models/Ride';
+import { Ride, IRide } from '../models/Ride';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -57,29 +57,56 @@ export class SocketService {
       // Handle driver location updates
       socket.on('driver-location', async (data) => {
         const { rideId, location } = data;
-        // Update driver location in database
-        await Ride.findByIdAndUpdate(rideId, {
-          'driverLocation.coordinates': [location.lng, location.lat],
-        });
-        
-        // Broadcast to passengers in the ride room
-        this.io.to(`ride-${rideId}`).emit('driver-location-update', {
-          driverId: socket.userId,
-          location,
-        });
+        try {
+          // Update driver location in database
+          const ride = await Ride.findById(rideId);
+          if (ride && ride.id) {
+            const updatedRide = await Ride.findByIdAndUpdate(ride.id, {
+              driverLocation: {
+                lat: location.lat || location.latitude,
+                lng: location.lng || location.longitude,
+              }
+            });
+          }
+          
+          // Broadcast to passengers in the ride room
+          this.io.to(`ride-${rideId}`).emit('driver-location-update', {
+            driverId: socket.userId,
+            location,
+          });
+        } catch (error) {
+          console.error('Error updating driver location:', error);
+          socket.emit('error', { message: 'Failed to update location' });
+        }
       });
 
       // Handle ride status updates
       socket.on('ride-status-update', async (data) => {
         const { rideId, status, driverLocation } = data;
         
-        await Ride.findByIdAndUpdate(rideId, { status });
-        
-        this.io.to(`ride-${rideId}`).emit('ride-status-updated', {
-          rideId,
-          status,
-          driverLocation,
-        });
+        try {
+          const ride = await Ride.findById(rideId);
+          if (ride && ride.id) {
+            await Ride.findByIdAndUpdate(ride.id, { 
+              status,
+              ...(driverLocation && {
+                driverLocation: {
+                  lat: driverLocation.lat || driverLocation.latitude,
+                  lng: driverLocation.lng || driverLocation.longitude,
+                }
+              })
+            });
+          }
+          
+          this.io.to(`ride-${rideId}`).emit('ride-status-updated', {
+            rideId,
+            status,
+            driverLocation,
+          });
+        } catch (error) {
+          console.error('Error updating ride status:', error);
+          socket.emit('error', { message: 'Failed to update ride status' });
+        }
       });
 
       // Handle disconnect
@@ -108,10 +135,9 @@ export class SocketService {
 
   // Verify JWT token
   private async verifyToken(token: string): Promise<any> {
-    // Implement JWT verification
     const jwt = require('jsonwebtoken');
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
       return decoded;
     } catch (error) {
       return null;
@@ -126,5 +152,20 @@ export class SocketService {
   // Get socket ID for a user
   getUserSocketId(userId: string): string | undefined {
     return this.connectedUsers.get(userId);
+  }
+
+  // Get all connected user IDs
+  getConnectedUsers(): string[] {
+    return Array.from(this.connectedUsers.keys());
+  }
+
+  // Check if a user is connected
+  isUserConnected(userId: string): boolean {
+    return this.connectedUsers.has(userId);
+  }
+
+  // Broadcast to all connected users
+  broadcastToAll(event: string, data: any): void {
+    this.io.emit(event, data);
   }
 }
