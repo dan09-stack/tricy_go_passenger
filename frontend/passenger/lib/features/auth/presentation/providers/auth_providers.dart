@@ -1,14 +1,16 @@
+// lib/features/auth/presentation/providers/auth_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tricygo_passenger/features/auth/presentation/state/auth_state.dart';
 import 'package:tricygo_passenger/features/auth/services/auth_service.dart';
 
-
-final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.read(authServiceProvider));
-});
-
+// Auth service provider
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
+});
+
+// Auth state provider
+final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  return AuthNotifier(ref.read(authServiceProvider));
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
@@ -40,6 +42,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(email: email);
   }
 
+  void setDevOtp(String otp) {
+    state = state.copyWith(devOtp: otp);
+  }
+
+  void clearError() {
+    state = state.copyWith(errorMessage: null);
+  }
+
   Future<bool> checkAuthentication() async {
     try {
       final isAuthenticated = await _authService.isAuthenticated();
@@ -51,15 +61,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
       return false;
     } catch (e) {
-      state = state.copyWith(errorMessage: 'Error checking authentication: ');
+      state = state.copyWith(errorMessage: 'Error checking authentication');
       return false;
     }
   }
 
   Future<void> sendOtp(String phoneNumber) async {
     try {
-      state = state.copyWith(isLoading: true);
-      await Future.delayed(const Duration(milliseconds: 1200));
+      state = state.copyWith(isLoading: true, errorMessage: null);
+      
+      // Call the actual API
+      await _authService.sendOtp(phoneNumber);
+      
       state = state.copyWith(
         phoneNumber: phoneNumber,
         isLoading: false,
@@ -68,7 +81,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Failed to send OTP',
+        errorMessage: 'Failed to send OTP: ${e.toString()}',
       );
       rethrow;
     }
@@ -76,17 +89,27 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> verifyOtp(String otp) async {
     try {
-      state = state.copyWith(isLoading: true);
-      await Future.delayed(const Duration(milliseconds: 1200));
+      state = state.copyWith(isLoading: true, errorMessage: null);
       
-      if (otp != '123456') {
-        throw Exception('Invalid OTP');
-      }
-      
-      state = state.copyWith(
-        isLoading: false,
-        currentState: AuthScreenState.signUpRegistration,
+      final response = await _authService.verifyOtp(
+        phoneNumber: state.phoneNumber!,
+        code: otp,
+        fullName: state.fullName,
+        email: state.email,
       );
+      
+      // Check if registration is needed
+      if (response['data']['user']['isVerified'] == false) {
+        state = state.copyWith(
+          isLoading: false,
+          currentState: AuthScreenState.signUpRegistration,
+        );
+      } else {
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+        );
+      }
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -98,27 +121,33 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> completeRegistration() async {
     try {
-      state = state.copyWith(isLoading: true);
-      await Future.delayed(const Duration(milliseconds: 1200));
+      state = state.copyWith(isLoading: true, errorMessage: null);
       
-      await _authService.saveAuthentication(
-        phoneNumber: state.phoneNumber!,
+      await _authService.completeRegistration(
         fullName: state.fullName!,
-        email: state.email ?? '',
+        email: state.email,
       );
       
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: true,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Registration failed',
+        errorMessage: 'Registration failed: ${e.toString()}',
       );
       rethrow;
     }
   }
 
   Future<void> logout() async {
-    await _authService.logout();
-    state = const AuthState();
+    try {
+      await _authService.logout();
+      state = const AuthState();
+    } catch (e) {
+      // Even if logout fails, clear local state
+      state = const AuthState();
+    }
   }
 }

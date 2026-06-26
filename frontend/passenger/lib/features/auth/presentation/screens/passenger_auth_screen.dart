@@ -1,3 +1,4 @@
+// lib/features/auth/presentation/screens/passenger_auth_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import "package:tricygo_passenger/core/theme.dart";
@@ -8,7 +9,6 @@ import "package:tricygo_passenger/features/auth/presentation/widgets/auth_phone_
 import "package:tricygo_passenger/features/auth/presentation/widgets/auth_registration_body.dart";
 import "package:tricygo_passenger/features/auth/presentation/widgets/auth_welcome_body.dart";
 import "package:tricygo_passenger/features/home/home_screen.dart";
-
 
 class PassengerAuthScreen extends ConsumerStatefulWidget {
   const PassengerAuthScreen({super.key});
@@ -70,6 +70,30 @@ class _PassengerAuthScreenState extends ConsumerState<PassengerAuthScreen>
   }
 
   Widget _buildAuthContent(AuthState authState) {
+    // Handle loading state
+    if (authState.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppTheme.secondaryGreen
+        ),
+      );
+    }
+
+    // Handle error state
+    if (authState.errorMessage != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(authState.errorMessage!),
+            backgroundColor: Colors.red,
+          ),
+        );
+        // Clear error after showing
+        ref.read(authStateProvider.notifier).clearError();
+      });
+    }
+
+    // Build the appropriate screen based on current state
     switch (authState.currentState) {
       case AuthScreenState.welcome:
         return const AuthWelcomeBody();
@@ -79,6 +103,22 @@ class _PassengerAuthScreenState extends ConsumerState<PassengerAuthScreen>
         return const AuthOtpVerificationBody();
       case AuthScreenState.signUpRegistration:
         return const AuthRegistrationBody();
+      case AuthScreenState.authenticated:
+        // If already authenticated, redirect to home
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const PassengerHomeScreen(),
+              ),
+            );
+          }
+        });
+        return const Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.primaryYellow,
+          ),
+        );
     }
   }
 }
