@@ -1,30 +1,18 @@
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tricygo_passenger/core/theme.dart';
-import 'package:tricygo_passenger/features/home/presentation/widgets/fare_tier_item.dart';
-import 'package:tricygo_passenger/features/home/services/ride_service.dart';
 
-class FareSelectSheet extends ConsumerStatefulWidget {
+class FareSelectSheet extends StatelessWidget {
+  final bool isLoading;
   final VoidCallback onRequestRide;
 
   const FareSelectSheet({
     super.key,
+    required this.isLoading,
     required this.onRequestRide,
   });
 
   @override
-  ConsumerState<FareSelectSheet> createState() => _FareSelectSheetState();
-}
-
-class _FareSelectSheetState extends ConsumerState<FareSelectSheet> {
-  String _selectedTierId = "eco_share";
-  final RideService _rideService = RideService();
-
-  @override
   Widget build(BuildContext context) {
-    final tiers = _rideService.getFareTiers();
-
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
@@ -37,22 +25,12 @@ class _FareSelectSheetState extends ConsumerState<FareSelectSheet> {
         children: [
           const Text(
             'Available Tricycle Options',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.primaryYellow,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryYellow),
           ),
           const SizedBox(height: 16),
-          ...tiers.map((tier) => FareTierItem(
-            tier: tier,
-            isSelected: tier.id == _selectedTierId,
-            onTap: () {
-              setState(() {
-                _selectedTierId = tier.id;
-              });
-            },
-          )),
+          _buildFareTierItem('TricyGo EcoShare', '₱45.00', '2 mins away', Icons.people_outline, true),
+          _buildFareTierItem('TricyGo Express', '₱70.00', 'Immediate pickup', Icons.flash_on, false),
+          _buildFareTierItem('TricyGo ComfortXL', '₱110.00', 'Heavy load / Luggage', Icons.bento_outlined, false),
           const SizedBox(height: 20),
           SizedBox(
             width: double.infinity,
@@ -63,16 +41,46 @@ class _FareSelectSheetState extends ConsumerState<FareSelectSheet> {
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: widget.onRequestRide,
-              child: const Text(
-                'Request TricyGo Ride',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              onPressed: isLoading ? null : onRequestRide,
+              child: isLoading
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Request TricyGo Ride', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           )
         ],
       ),
     );
   }
-}
 
+  Widget _buildFareTierItem(String name, String price, String eta, IconData icon, bool isSelected) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFF383838) : AppTheme.backgroundDark,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: isSelected ? AppTheme.primaryYellow : Colors.transparent, width: 1.5),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppTheme.primaryYellow, size: 28),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(eta, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              ],
+            ),
+          ),
+          Text(price, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryYellow)),
+        ],
+      ),
+    );
+  }
+}

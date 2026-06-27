@@ -1,23 +1,20 @@
-
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tricygo_passenger/core/theme.dart';
-import 'package:tricygo_passenger/features/home/presentation/providers/home_providers.dart';
 
-class HomeAppBar extends ConsumerWidget implements PreferredSizeWidget {
+class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String userInitial;
   final VoidCallback onLogout;
-  final VoidCallback onNotifications;
+  final VoidCallback onNotification;
 
   const HomeAppBar({
     super.key,
+    required this.userInitial,
     required this.onLogout,
-    required this.onNotifications,
+    required this.onNotification,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final userInitial = ref.watch(userInitialProvider);
-    
+  Widget build(BuildContext context) {
     return AppBar(
       title: Row(
         children: [
@@ -30,14 +27,7 @@ class HomeAppBar extends ConsumerWidget implements PreferredSizeWidget {
             child: const Icon(Icons.electric_bike, color: AppTheme.darkGray, size: 20),
           ),
           const SizedBox(width: 10),
-          const Text(
-            'TricyGo',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-          ),
+          const Text('TricyGo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
         ],
       ),
       backgroundColor: AppTheme.darkGray,
@@ -45,7 +35,7 @@ class HomeAppBar extends ConsumerWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: const Icon(Icons.notifications_active, color: AppTheme.primaryYellow),
-          onPressed: onNotifications,
+          onPressed: onNotification,
         ),
         IconButton(
           icon: const Icon(Icons.logout_rounded, color: Colors.white70),
@@ -60,19 +50,7 @@ class HomeAppBar extends ConsumerWidget implements PreferredSizeWidget {
             side: const BorderSide(color: Colors.white10),
           ),
           onSelected: (value) {
-            if (value == 'profile') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile feature coming soon!')),
-              );
-            } else if (value == 'history') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Ride history feature coming soon!')),
-              );
-            } else if (value == 'settings') {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings feature coming soon!')),
-              );
-            } else if (value == 'logout') {
+            if (value == 'logout') {
               onLogout();
             }
           },
@@ -142,10 +120,3 @@ class HomeAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
-
-final userInitialProvider = Provider<String>((ref) {
-  // This would normally come from SharedPreferences
-  // For now, we'll return a default
-  return 'U';
-});
-

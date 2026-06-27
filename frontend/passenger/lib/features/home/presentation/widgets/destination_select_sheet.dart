@@ -1,18 +1,17 @@
-
 import 'package:flutter/material.dart';
 import 'package:tricygo_passenger/core/theme.dart';
 
 class DestinationSelectSheet extends StatelessWidget {
-  final String pickupLocation;
-  final String destinationLocation;
+  final TextEditingController pickupController;
+  final TextEditingController destinationController;
   final int passengerCount;
-  final Function(int) onPassengerCountChanged;
+  final VoidCallback onPassengerCountChanged;
   final VoidCallback onConfirm;
 
   const DestinationSelectSheet({
     super.key,
-    required this.pickupLocation,
-    required this.destinationLocation,
+    required this.pickupController,
+    required this.destinationController,
     required this.passengerCount,
     required this.onPassengerCountChanged,
     required this.onConfirm,
@@ -36,8 +35,12 @@ class DestinationSelectSheet extends StatelessWidget {
               const Icon(Icons.adjust, color: AppTheme.secondaryGreen, size: 20),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  pickupLocation,
+                child: TextField(
+                  controller: pickupController,
+                  decoration: const InputDecoration(
+                    hintText: 'Pickup Location',
+                    border: InputBorder.none,
+                  ),
                   style: const TextStyle(fontSize: 14, color: Colors.white70),
                 ),
               ),
@@ -49,13 +52,13 @@ class DestinationSelectSheet extends StatelessWidget {
               const Icon(Icons.location_on, color: AppTheme.primaryYellow, size: 20),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  destinationLocation,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                child: TextField(
+                  controller: destinationController,
+                  decoration: const InputDecoration(
+                    hintText: 'Where to?',
+                    border: InputBorder.none,
                   ),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ),
             ],
@@ -64,36 +67,8 @@ class DestinationSelectSheet extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Number of Passengers',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.backgroundDark,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove, size: 18),
-                      onPressed: () {
-                        if (passengerCount > 1) onPassengerCountChanged(passengerCount - 1);
-                      },
-                    ),
-                    Text(
-                      '$passengerCount',
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add, size: 18),
-                      onPressed: () {
-                        if (passengerCount < 4) onPassengerCountChanged(passengerCount + 1);
-                      },
-                    ),
-                  ],
-                ),
-              )
+              const Text('Number of Passengers', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+              _buildPassengerCounter(),
             ],
           ),
           const SizedBox(height: 24),
@@ -118,5 +93,30 @@ class DestinationSelectSheet extends StatelessWidget {
       ),
     );
   }
-}
 
+  Widget _buildPassengerCounter() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.backgroundDark,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.remove, size: 18),
+            onPressed: () {
+              if (passengerCount > 1) onPassengerCountChanged();
+            },
+          ),
+          Text('$passengerCount', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          IconButton(
+            icon: const Icon(Icons.add, size: 18),
+            onPressed: () {
+              if (passengerCount < 4) onPassengerCountChanged();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}

@@ -59,6 +59,36 @@
       "id": "907baa50-1722-47ac-a43d-e408e3e04f10",
       "createdAt": "2026-06-27T07:42:25.228Z",
       "updatedAt": "2026-06-27T07:42:25.228Z"
+    },
+    {
+      "phoneNumber": "9876543211",
+      "code": "123456",
+      "expiresAt": "2026-06-27T09:18:03.947Z",
+      "isUsed": false,
+      "attempts": 0,
+      "id": "1285d1bc-0460-4cb4-8090-9c337c60a7fc",
+      "createdAt": "2026-06-27T09:13:04.001Z",
+      "updatedAt": "2026-06-27T09:13:04.001Z"
+    },
+    {
+      "phoneNumber": "test@email.com",
+      "code": "123456",
+      "expiresAt": "2026-06-27T10:03:49.567Z",
+      "isUsed": false,
+      "attempts": 0,
+      "id": "578910a9-b07d-4009-a6b9-6c85ed24b124",
+      "createdAt": "2026-06-27T09:58:49.573Z",
+      "updatedAt": "2026-06-27T09:58:49.573Z"
+    },
+    {
+      "phoneNumber": "test@email.com",
+      "code": "123456",
+      "expiresAt": "2026-06-27T10:07:14.144Z",
+      "isUsed": false,
+      "attempts": 0,
+      "id": "2897c3fa-39d2-49f5-a00d-705089501d11",
+      "createdAt": "2026-06-27T10:02:14.150Z",
+      "updatedAt": "2026-06-27T10:02:14.150Z"
     }
   ],
   "users": [
@@ -164,6 +194,32 @@
       "id": "c4920e6b-1683-4bd3-9333-d530e366b229",
       "createdAt": "2026-06-27T07:42:29.034Z",
       "updatedAt": "2026-06-27T07:42:29.034Z"
+    },
+    {
+      "phoneNumber": "test@email.com",
+      "fullName": "test",
+      "email": "test@email.com",
+      "isVerified": true,
+      "rating": 0,
+      "totalRides": 0,
+      "isDriver": false,
+      "driverProfile": {
+        "vehicleType": "",
+        "plateNumber": "",
+        "isAvailable": false,
+        "location": {
+          "lat": 0,
+          "lng": 0
+        }
+      },
+      "preferences": {
+        "notifications": true,
+        "emailUpdates": true,
+        "smsUpdates": true
+      },
+      "id": "6b9c137a-bd6e-4cdc-b2f2-0b377ed3be45",
+      "createdAt": "2026-06-27T09:58:49.606Z",
+      "updatedAt": "2026-06-27T09:58:49.606Z"
     }
   ]
 }

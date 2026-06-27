@@ -1,26 +1,10 @@
-
 import 'package:flutter/material.dart';
 import 'package:tricygo_passenger/core/theme.dart';
 
 class DriverTrackingSheet extends StatelessWidget {
-  final String driverName;
-  final double driverRating;
-  final String driverVehicle;
-  final String driverPlate;
-  final String eta;
-  final VoidCallback onMessage;
-  final VoidCallback onCall;
+  final double driverProgress;
 
-  const DriverTrackingSheet({
-    super.key,
-    required this.driverName,
-    required this.driverRating,
-    required this.driverVehicle,
-    required this.driverPlate,
-    required this.eta,
-    required this.onMessage,
-    required this.onCall,
-  });
+  const DriverTrackingSheet({super.key, required this.driverProgress});
 
   @override
   Widget build(BuildContext context) {
@@ -45,18 +29,12 @@ class DriverTrackingSheet extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      driverName,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
+                    const Text('Speedy Tricycler', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     Row(
                       children: [
                         const Icon(Icons.star, color: AppTheme.primaryYellow, size: 16),
                         const SizedBox(width: 4),
-                        Text(
-                          '${driverRating.toStringAsFixed(1)}',
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
+                        const Text('4.9', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                         const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -64,13 +42,7 @@ class DriverTrackingSheet extends StatelessWidget {
                             color: AppTheme.backgroundDark,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
-                            'Verified Pro',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppTheme.secondaryGreen,
-                            ),
-                          ),
+                          child: const Text('Verified Pro', style: TextStyle(fontSize: 10, color: AppTheme.secondaryGreen)),
                         )
                       ],
                     )
@@ -81,17 +53,10 @@ class DriverTrackingSheet extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '$eta mins',
-                    style: const TextStyle(
-                      color: AppTheme.primaryYellow,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+                    '${(3 * (1.0 - driverProgress)).toStringAsFixed(1)} mins',
+                    style: const TextStyle(color: AppTheme.primaryYellow, fontWeight: FontWeight.bold, fontSize: 18),
                   ),
-                  const Text(
-                    'Arriving Soon',
-                    style: TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
+                  const Text('Arriving Soon', style: TextStyle(color: Colors.white38, fontSize: 11)),
                 ],
               )
             ],
@@ -99,25 +64,12 @@ class DriverTrackingSheet extends StatelessWidget {
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppTheme.backgroundDark,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
+            decoration: BoxDecoration(color: AppTheme.backgroundDark, borderRadius: BorderRadius.circular(12)),
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Vehicle: $driverVehicle',
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
-                ),
-                Text(
-                  'Plate: $driverPlate',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryYellow,
-                  ),
-                ),
+                Text('Vehicle: Yellow Bajaj RE 4S', style: TextStyle(fontSize: 13, color: Colors.white70)),
+                Text('Plate: TRI-7788', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryYellow)),
               ],
             ),
           ),
@@ -132,7 +84,7 @@ class DriverTrackingSheet extends StatelessWidget {
                     backgroundColor: const Color(0xFF444444),
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: onMessage,
+                  onPressed: () {},
                 ),
               ),
               const SizedBox(width: 12),
@@ -144,7 +96,7 @@ class DriverTrackingSheet extends StatelessWidget {
                     backgroundColor: AppTheme.secondaryGreen,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: onCall,
+                  onPressed: () {},
                 ),
               ),
             ],
@@ -154,4 +106,3 @@ class DriverTrackingSheet extends StatelessWidget {
     );
   }
 }
-

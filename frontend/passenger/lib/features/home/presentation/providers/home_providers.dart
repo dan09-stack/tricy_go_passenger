@@ -1,114 +1,129 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tricygo_passenger/features/home/presentation/state/home_state.dart';
-import 'package:tricygo_passenger/features/home/services/location_service.dart';
-import 'package:tricygo_passenger/features/home/services/ride_service.dart';
+import 'package:tricygo_passenger/features/home/models/ride_model.dart';
+import 'package:tricygo_passenger/features/home/services/home_service.dart';
 
-
-final homeStateProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
-  return HomeNotifier(
-    ref.read(locationServiceProvider),
-    ref.read(rideServiceProvider),
-  );
-});
-
-final locationServiceProvider = Provider<LocationService>((ref) {
-  return LocationService();
-});
-
-final rideServiceProvider = Provider<RideService>((ref) {
-  return RideService();
-});
+enum HomeState {
+  destinationSelect,
+  fareSelect,
+  matching,
+  driverEnRoute,
+  tripCompleted,
+}
 
 class HomeNotifier extends StateNotifier<HomeState> {
-  final LocationService _locationService;
-  final RideService _rideService;
+  final HomeService _homeService;
 
-  HomeNotifier(this._locationService, this._rideService) : super(const HomeState());
+  HomeNotifier(this._homeService) : super(HomeState.destinationSelect);
 
-  void setState(AppState newState) {
-    state = state.copyWith(currentState: newState);
-  }
+  RideModel? _currentRide;
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  void setPassengerCount(int count) {
-    state = state.copyWith(passengerCount: count);
-  }
+  RideModel? get currentRide => _currentRide;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
-  void setPickupLocation(String location) {
-    state = state.copyWith(pickupLocation: location);
-  }
-
-  void setDestinationLocation(String location) {
-    state = state.copyWith(destinationLocation: location);
-  }
-
-  void setSelectedFareTier(String tier) {
-    state = state.copyWith(selectedFareTier: tier);
-  }
-
-  void updateDriverProgress(double progress) {
-    state = state.copyWith(driverProgress: progress);
-    if (progress >= 1.0) {
-      state = state.copyWith(currentState: AppState.tripCompleted);
-    }
+  void setState(HomeState newState) {
+    state = newState;
   }
 
   void setLoading(bool loading) {
-    state = state.copyWith(isLoading: loading);
+    _isLoading = loading;
   }
 
   void setError(String? error) {
-    state = state.copyWith(errorMessage: error);
+    _errorMessage = error;
   }
 
-  Future<void> requestRide() async {
+  void clearError() {
+    _errorMessage = null;
+  }
+
+  Future<void> requestRide({
+    required LocationModel pickupLocation,
+    required LocationModel dropoffLocation,
+    required int passengerCount,
+    required String paymentMethod,
+  }) async {
     try {
-      state = state.copyWith(isLoading: true);
-      state = state.copyWith(currentState: AppState.matching);
-      
-      await _rideService.requestRide(
-        pickup: state.pickupLocation,
-        destination: state.destinationLocation,
-        passengers: state.passengerCount,
+      _isLoading = true;
+      _errorMessage = null;
+
+      final ride = await _homeService.requestRide(
+        pickupLocation: pickupLocation,
+        dropoffLocation: dropoffLocation,
+        passengerCount: passengerCount,
+        paymentMethod: paymentMethod,
       );
-      
-      state = state.copyWith(isLoading: false);
+
+      _currentRide = ride;
+      _isLoading = false;
+      state = HomeState.matching;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
+      _isLoading = false;
+      _errorMessage = e.toString();
       rethrow;
     }
   }
 
   Future<void> cancelRide() async {
+    if (_currentRide?.id == null) return;
+
     try {
-      state = state.copyWith(isLoading: true);
-      await _rideService.cancelRide();
-      state = state.copyWith(
-        currentState: AppState.destinationSelect,
-        driverProgress: 0.0,
-        isLoading: false,
-      );
+      _isLoading = true;
+      _errorMessage = null;
+
+      await _homeService.cancelRide(_currentRide!.id!);
+      _currentRide = null;
+      _isLoading = false;
+      state = HomeState.destinationSelect;
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: e.toString(),
-      );
+      _isLoading = false;
+      _errorMessage = e.toString();
       rethrow;
     }
   }
 
-  void resetToDestinationSelect() {
-    state = state.copyWith(
-      currentState: AppState.destinationSelect,
-      driverProgress: 0.0,
-    );
+  Future<void> completeRide() async {
+    if (_currentRide?.id == null) return;
+
+    try {
+      await _homeService.rateRide(
+        rideId: _currentRide!.id!,
+        rating: 4.5,
+        review: 'Great ride!',
+      );
+      _currentRide = null;
+      state = HomeState.tripCompleted;
+    } catch (e) {
+      _errorMessage = e.toString();
+    }
   }
 
-  void completeTrip() {
-    state = state.copyWith(currentState: AppState.tripCompleted);
+  void reset() {
+    state = HomeState.destinationSelect;
+    _currentRide = null;
+    _isLoading = false;
+    _errorMessage = null;
+  }
+
+  void updateRideStatus(RideModel ride) {
+    _currentRide = ride;
   }
 }
 
+final homeProvider = StateNotifierProvider<HomeNotifier, HomeState>((ref) {
+  return HomeNotifier(HomeService());
+});
+
+final currentRideProvider = Provider<RideModel?>((ref) {
+  return ref.watch(homeProvider.notifier).currentRide;
+});
+
+final isLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(homeProvider.notifier).isLoading;
+});
+
+final errorMessageProvider = Provider<String?>((ref) {
+  return ref.watch(homeProvider.notifier).errorMessage;
+});
