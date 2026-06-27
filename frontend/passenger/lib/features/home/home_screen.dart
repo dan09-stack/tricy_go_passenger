@@ -5,6 +5,9 @@ import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tricygo_passenger/features/auth/presentation/screens/passenger_auth_screen.dart';
+import 'package:tricygo_passenger/core/network/api_client.dart';
+import 'package:tricygo_passenger/core/constants/api_constants.dart';
+import 'package:tricygo_passenger/core/network/api_socket.dart';
 import '../../core/theme.dart';
 
 enum AppState { destinationSelect, fareSelect, matching, driverEnRoute, tripCompleted }
@@ -17,19 +20,21 @@ class PassengerHomeScreen extends StatefulWidget {
 }
 
 class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerProviderStateMixin {
+  final ApiClient _apiClient = ApiClient();
+  
   AppState _currentAppState = AppState.destinationSelect;
   int passengerCount = 1;
-  final TextEditingController _destinationController = TextEditingController(text: 'Central Terminal Market');
-  final TextEditingController _pickupController = TextEditingController(text: 'My Current Location (7th Ave)');
+  final TextEditingController _destinationController = TextEditingController();
+  final TextEditingController _pickupController = TextEditingController();
   
   // Map Controllers
   late MapController _mapController;
   bool _isMapReady = false;
   
   // Locations
-  final LatLng _currentLocation = const LatLng(14.5995, 120.9842); // Default Manila
+  LatLng _currentLocation = const LatLng(14.5995, 120.9842);
   LatLng _pickupLocation = const LatLng(14.5995, 120.9842);
-  final LatLng _dropoffLocation = const LatLng(14.6005, 120.9852);
+  LatLng _dropoffLocation = const LatLng(14.6005, 120.9852);
   
   // Map Overlays
   final List<Marker> _markers = [];
@@ -46,12 +51,15 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
   // User info
   String _userName = 'User';
   String _userInitial = 'U';
+  
+  // Ride data
+  String? _currentRideId;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     
-    // Initialize map controller
     _mapController = MapController();
     
     _rippleController = AnimationController(
@@ -68,20 +76,17 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
             _driverProgress = _vehicleController.value;
             if (_driverProgress >= 1.0) {
               _currentAppState = AppState.tripCompleted;
+              _completeRide();
             }
             _updateMapOverlays();
           }
         });
       });
 
-    // Load user info
     _loadUserInfo();
-    
-    // Get current location
     _getCurrentLocation();
-    
-    // Generate random nearby tricycles
     _generateNearbyTricycles();
+    _setupSocketListeners();
   }
 
   @override
@@ -91,14 +96,67 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
     _vehicleController.dispose();
     _destinationController.dispose();
     _pickupController.dispose();
+    // Leave ride room if active
+    if (_currentRideId != null) {
+      apiSocket.leaveRide(_currentRideId!);
+    }
     super.dispose();
   }
 
-  // Load user info from SharedPreferences
+  void _setupSocketListeners() {
+    // Listen for ride status updates
+    apiSocket.onRideStatusChange((data) {
+      print('🚗 Ride status update: $data');
+      final status = data['status'];
+      final rideId = data['rideId'];
+      
+      if (rideId == _currentRideId) {
+        setState(() {
+          switch (status) {
+            case 'matched':
+              _currentAppState = AppState.driverEnRoute;
+              _vehicleController.forward(from: 0.0);
+              break;
+            case 'en_route':
+              _currentAppState = AppState.driverEnRoute;
+              break;
+            case 'completed':
+              _currentAppState = AppState.tripCompleted;
+              break;
+            case 'cancelled':
+              _currentAppState = AppState.destinationSelect;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Ride was cancelled')),
+              );
+              break;
+          }
+          _updateMapOverlays();
+        });
+      }
+    });
+
+    // Listen for driver location updates
+    apiSocket.onDriverLocationUpdate((data) {
+      print('📍 Driver location update: $data');
+      // Update driver marker position on map
+      final location = data['location'];
+      if (location != null && _currentAppState == AppState.driverEnRoute) {
+        setState(() {
+          _dropoffLocation = LatLng(
+            location['lat'] ?? _dropoffLocation.latitude,
+            location['lng'] ?? _dropoffLocation.longitude,
+          );
+          _updateMapOverlays();
+        });
+      }
+    });
+  }
+
   Future<void> _loadUserInfo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final userName = prefs.getString('userName') ?? 'User';
+      final userName = prefs.getString('userName') ?? 
+                       prefs.getString('fullName') ?? 'User';
       setState(() {
         _userName = userName;
         _userInitial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
@@ -108,10 +166,8 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
     }
   }
 
-  // Logout function
   Future<void> _logout() async {
     try {
-      // Show confirmation dialog
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -127,17 +183,11 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white54),
-              ),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(
-                'Logout',
-                style: TextStyle(color: Colors.red),
-              ),
+              child: const Text('Logout', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -145,11 +195,13 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
 
       if (confirm != true) return;
 
+      // Call logout API
+      await _apiClient.post(ApiConstants.logout);
+      
       // Clear SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
       
-      // Navigate to auth screen
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const PassengerAuthScreen()),
@@ -180,13 +232,13 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
       );
       
       setState(() {
+        _currentLocation = LatLng(position.latitude, position.longitude);
         _pickupLocation = LatLng(position.latitude, position.longitude);
         _updateMapOverlays();
       });
       
-      // Move map to current location when ready
       if (_isMapReady) {
-        _mapController.move(LatLng(position.latitude, position.longitude), 15.0);
+        _mapController.move(_pickupLocation, 15.0);
       }
       
     } catch (e) {
@@ -219,11 +271,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
           point: _pickupLocation,
           width: 40,
           height: 40,
-          child: const Icon(
-            Icons.location_on_rounded,
-            color: Colors.green,
-            size: 40,
-          ),
+          child: const Icon(Icons.location_on_rounded, color: Colors.green, size: 40),
         ),
       );
       
@@ -234,11 +282,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
             point: _dropoffLocation,
             width: 40,
             height: 40,
-            child: const Icon(
-              Icons.location_on_rounded,
-              color: Colors.red,
-              size: 40,
-            ),
+            child: const Icon(Icons.location_on_rounded, color: Colors.red, size: 40),
           ),
         );
       }
@@ -256,11 +300,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
               ),
-              child: const Icon(
-                Icons.electric_bike,
-                color: Colors.white,
-                size: 18,
-              ),
+              child: const Icon(Icons.electric_bike, color: Colors.white, size: 18),
             ),
           ),
         );
@@ -297,17 +337,13 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
                 border: Border.all(color: AppTheme.primaryYellow, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryYellow.withValues(alpha: 0.5),
+                    color: AppTheme.primaryYellow.withAlpha(128),
                     blurRadius: 12,
                     spreadRadius: 2,
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.directions_bike,
-                color: Colors.white,
-                size: 24,
-              ),
+              child: const Icon(Icons.directions_bike, color: Colors.white, size: 24),
             ),
           ),
         );
@@ -315,20 +351,121 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
     });
   }
 
-  void _triggerDriverMatchSequence() {
-    setState(() {
-      _currentAppState = AppState.matching;
-    });
+  // 🔥 API CALL: Request a Ride
+  Future<void> _requestRide() async {
+    setState(() => _isLoading = true);
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && _currentAppState == AppState.matching) {
+    try {
+      final response = await _apiClient.post(
+        ApiConstants.requestRide,
+        body: {
+          'pickupLocation': {
+            'lat': _pickupLocation.latitude,
+            'lng': _pickupLocation.longitude,
+            'address': _pickupController.text.isNotEmpty 
+                ? _pickupController.text 
+                : 'Current Location',
+          },
+          'dropoffLocation': {
+            'lat': _dropoffLocation.latitude,
+            'lng': _dropoffLocation.longitude,
+            'address': _destinationController.text.isNotEmpty 
+                ? _destinationController.text 
+                : 'Destination',
+          },
+          'passengerCount': passengerCount,
+          'paymentMethod': 'cash',
+        },
+      );
+
+      if (response['success'] == true) {
+        final rideData = response['data'];
+        _currentRideId = rideData['id'];
+        
+        // Join the ride room for real-time updates
+        apiSocket.joinRide(_currentRideId!);
+        
         setState(() {
-          _currentAppState = AppState.driverEnRoute;
-          _vehicleController.forward(from: 0.0);
+          _currentAppState = AppState.matching;
+          _isLoading = false;
+        });
+
+        // Simulate driver matching (in real app, this would be handled by socket events)
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted && _currentAppState == AppState.matching) {
+            // In production, this would be triggered by the server via socket
+            setState(() {
+              _currentAppState = AppState.driverEnRoute;
+              _vehicleController.forward(from: 0.0);
+              _updateMapOverlays();
+            });
+          }
+        });
+      } else {
+        throw Exception(response['message'] ?? 'Failed to request ride');
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to request ride: $e')),
+      );
+    }
+  }
+
+  // 🚗 API CALL: Cancel Ride
+  Future<void> _cancelRide() async {
+    if (_currentRideId == null) return;
+
+    try {
+      final response = await _apiClient.post(
+        '${ApiConstants.cancelRide}/$_currentRideId',
+        body: {},
+      );
+
+      if (response['success'] == true) {
+        apiSocket.leaveRide(_currentRideId!);
+        setState(() {
+          _currentAppState = AppState.destinationSelect;
+          _vehicleController.reset();
+          _driverProgress = 0.0;
+          _currentRideId = null;
           _updateMapOverlays();
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ride cancelled successfully')),
+        );
       }
-    });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to cancel ride: $e')),
+      );
+    }
+  }
+
+  // ⭐ API CALL: Complete Ride
+  Future<void> _completeRide() async {
+    if (_currentRideId == null) return;
+
+    try {
+      // In production, you'd call API to complete ride
+      final response = await _apiClient.post(
+        '${ApiConstants.rateRide}/$_currentRideId',
+        body: {
+          'rating': 4.5,
+          'review': 'Great ride!',
+        },
+      );
+      
+      if (response['success'] == true) {
+        apiSocket.leaveRide(_currentRideId!);
+        setState(() {
+          _currentAppState = AppState.tripCompleted;
+          _currentRideId = null;
+        });
+      }
+    } catch (e) {
+      print('Error completing ride: $e');
+    }
   }
 
   @override
@@ -346,29 +483,25 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
               child: const Icon(Icons.electric_bike, color: AppTheme.darkGray, size: 20),
             ),
             const SizedBox(width: 10),
-            const Text('TricyGo', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, fontSize: 20)),
+            const Text('TricyGo', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
           ],
         ),
         backgroundColor: AppTheme.darkGray,
         elevation: 4,
         actions: [
-          // Notification Icon
           IconButton(
             icon: const Icon(Icons.notifications_active, color: AppTheme.primaryYellow),
             onPressed: () {
-              // Show notifications
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('No new notifications')),
               );
             },
           ),
-          // Logout Button
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: Colors.white70),
             onPressed: _logout,
             tooltip: 'Logout',
           ),
-          // User Avatar with Dropdown
           PopupMenuButton<String>(
             offset: const Offset(0, 50),
             color: AppTheme.darkGray,
@@ -378,17 +511,14 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
             ),
             onSelected: (value) {
               if (value == 'profile') {
-                // Navigate to profile
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Profile feature coming soon!')),
                 );
               } else if (value == 'history') {
-                // Navigate to ride history
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Ride history feature coming soon!')),
                 );
               } else if (value == 'settings') {
-                // Navigate to settings
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Settings feature coming soon!')),
                 );
@@ -459,57 +589,65 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
       ),
       body: Stack(
         children: [
-          // REAL MAP - FlutterMap with OpenStreetMap
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
               initialCenter: _currentLocation,
               initialZoom: 15.0,
               onMapReady: () {
-                setState(() {
-                  _isMapReady = true;
-                });
-                // Move to current location when map is ready
+                setState(() => _isMapReady = true);
                 _mapController.move(_pickupLocation, 15.0);
-              },
-              onTap: (tapPosition, point) {
-                // Handle map tap if needed
               },
             ),
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.tricygo_passenger',
-                tileProvider:  NetworkTileProvider(),
+                tileProvider: NetworkTileProvider(),
               ),
               MarkerLayer(markers: _markers),
               PolylineLayer(polylines: _polylines),
             ],
           ),
           
-          // Back Button
           if (_currentAppState != AppState.destinationSelect)
             Positioned(
               top: 16,
               left: 16,
               child: CircleAvatar(
-                backgroundColor: AppTheme.darkGray.withValues(alpha: 0.8),
+                backgroundColor: AppTheme.darkGray.withAlpha(200),
                 foregroundColor: Colors.white,
                 child: IconButton(
                   icon: const Icon(Icons.arrow_back),
                   onPressed: () {
-                    setState(() {
-                      _currentAppState = AppState.destinationSelect;
-                      _vehicleController.reset();
-                      _driverProgress = 0.0;
-                      _updateMapOverlays();
-                    });
+                    if (_currentAppState == AppState.matching) {
+                      _cancelRide();
+                    } else {
+                      setState(() {
+                        _currentAppState = AppState.destinationSelect;
+                        _vehicleController.reset();
+                        _driverProgress = 0.0;
+                        _updateMapOverlays();
+                      });
+                    }
                   },
                 ),
               ),
             ),
 
-          // Bottom Panel
+          if (_isLoading)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryYellow,
+                ),
+              ),
+            ),
+
           Positioned(
             left: 0,
             right: 0,
@@ -655,8 +793,14 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              onPressed: _triggerDriverMatchSequence,
-              child: const Text('Request TricyGo Ride', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              onPressed: _requestRide, // 🔥 API CALL HERE
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Request TricyGo Ride', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           )
         ],
@@ -724,14 +868,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> with TickerPr
               side: const BorderSide(color: Colors.white24),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            onPressed: () {
-              setState(() {
-                _currentAppState = AppState.destinationSelect;
-                _vehicleController.reset();
-                _driverProgress = 0.0;
-                _updateMapOverlays();
-              });
-            },
+            onPressed: _cancelRide, // 🔥 API CALL HERE
             child: const Text('Cancel Request', style: TextStyle(color: Colors.white70)),
           ),
         ],

@@ -1,14 +1,11 @@
-// lib/features/auth/presentation/providers/auth_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tricygo_passenger/features/auth/presentation/state/auth_state.dart';
 import 'package:tricygo_passenger/features/auth/services/auth_service.dart';
 
-// Auth service provider
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
 });
 
-// Auth state provider
 final authStateProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(ref.read(authServiceProvider));
 });
@@ -55,7 +52,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final isAuthenticated = await _authService.isAuthenticated();
       if (isAuthenticated) {
         final token = await _authService.getUserToken();
-        if (token != null) {
+        if (token != null && token.isNotEmpty) {
+          state = state.copyWith(isAuthenticated: true);
           return true;
         }
       }
@@ -70,7 +68,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       state = state.copyWith(isLoading: true, errorMessage: null);
       
-      // Call the actual API
       await _authService.sendOtp(phoneNumber);
       
       state = state.copyWith(
@@ -105,9 +102,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
           currentState: AuthScreenState.signUpRegistration,
         );
       } else {
+        // Set authenticated state - this will trigger navigation
         state = state.copyWith(
           isLoading: false,
           isAuthenticated: true,
+          currentState: AuthScreenState.authenticated,
         );
       }
     } catch (e) {
@@ -128,9 +127,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         email: state.email,
       );
       
+      // Set authenticated state - this will trigger navigation
       state = state.copyWith(
         isLoading: false,
         isAuthenticated: true,
+        currentState: AuthScreenState.authenticated,
       );
     } catch (e) {
       state = state.copyWith(
@@ -146,7 +147,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _authService.logout();
       state = const AuthState();
     } catch (e) {
-      // Even if logout fails, clear local state
       state = const AuthState();
     }
   }

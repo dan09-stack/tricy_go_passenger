@@ -14,44 +14,66 @@ export class SocketService {
   }
 
   initialize(): void {
+    // Authentication middleware - allow connections without token in development
     this.io.use(async (socket: AuthenticatedSocket, next) => {
       try {
         const token = socket.handshake.auth.token;
+        
+        // In development, allow connections without token
         if (!token) {
-          return next(new Error('Authentication required'));
+          console.log('⚠️ No token provided, allowing connection for development');
+          return next();
         }
 
         // Verify JWT token
         const decoded = await this.verifyToken(token);
         if (!decoded) {
-          return next(new Error('Invalid token'));
+          console.log('⚠️ Invalid token, allowing connection for development');
+          return next();
         }
 
         socket.userId = decoded.userId;
+        console.log(`✅ Token verified for user: ${decoded.userId}`);
         next();
       } catch (error) {
-        next(new Error('Authentication failed'));
+        console.log('⚠️ Auth error, allowing connection for development');
+        next();
       }
     });
 
     this.io.on('connection', (socket: AuthenticatedSocket) => {
-      console.log(`🔌 New client connected: ${socket.id}`);
+      const transport = socket.conn.transport.name;
+      console.log(`🔌 New client connected: ${socket.id} (transport: ${transport})`);
       
       if (socket.userId) {
         this.connectedUsers.set(socket.userId, socket.id);
         console.log(`👤 User ${socket.userId} connected`);
       }
 
+      // Send connection confirmation
+      socket.emit('connected', { 
+        message: 'Connected to Socket.IO server',
+        socketId: socket.id,
+        userId: socket.userId || 'anonymous',
+        transport: transport,
+      });
+
       // Handle joining ride room
       socket.on('join-ride', (rideId: string) => {
         socket.join(`ride-${rideId}`);
         console.log(`🚗 User joined ride room: ride-${rideId}`);
+        socket.emit('joined-ride', { rideId, message: 'Successfully joined ride' });
       });
 
       // Handle leaving ride room
       socket.on('leave-ride', (rideId: string) => {
         socket.leave(`ride-${rideId}`);
         console.log(`🚗 User left ride room: ride-${rideId}`);
+      });
+
+      // Handle ping/pong for keep-alive
+      socket.on('ping', () => {
+        socket.emit('pong', { timestamp: Date.now() });
       });
 
       // Handle driver location updates
@@ -61,7 +83,7 @@ export class SocketService {
           // Update driver location in database
           const ride = await Ride.findById(rideId);
           if (ride && ride.id) {
-            const updatedRide = await Ride.findByIdAndUpdate(ride.id, {
+            await Ride.findByIdAndUpdate(ride.id, {
               driverLocation: {
                 lat: location.lat || location.latitude,
                 lng: location.lng || location.longitude,
@@ -110,14 +132,16 @@ export class SocketService {
       });
 
       // Handle disconnect
-      socket.on('disconnect', () => {
+      socket.on('disconnect', (reason) => {
         if (socket.userId) {
           this.connectedUsers.delete(socket.userId);
-          console.log(`👤 User ${socket.userId} disconnected`);
+          console.log(`👤 User ${socket.userId} disconnected: ${reason}`);
         }
-        console.log(`🔌 Client disconnected: ${socket.id}`);
+        console.log(`🔌 Client disconnected: ${socket.id} - ${reason}`);
       });
     });
+
+    console.log('✅ Socket.IO initialized');
   }
 
   // Send notification to a specific user
@@ -125,6 +149,8 @@ export class SocketService {
     const socketId = this.connectedUsers.get(userId);
     if (socketId) {
       this.io.to(socketId).emit(event, data);
+    } else {
+      console.log(`⚠️ User ${userId} not connected`);
     }
   }
 
@@ -135,11 +161,13 @@ export class SocketService {
 
   // Verify JWT token
   private async verifyToken(token: string): Promise<any> {
-    const jwt = require('jsonwebtoken');
     try {
+      // Dynamic import for JWT
+      const jwt = require('jsonwebtoken');
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
       return decoded;
     } catch (error) {
+      console.log('⚠️ Token verification failed:', error);
       return null;
     }
   }
@@ -167,5 +195,27 @@ export class SocketService {
   // Broadcast to all connected users
   broadcastToAll(event: string, data: any): void {
     this.io.emit(event, data);
+    console.log(`📡 Broadcasted to all: ${event}`);
+  }
+
+  // Get connection statistics
+  getStats(): any {
+    return {
+      totalConnections: this.connectedUsers.size,
+      connectedUsers: Array.from(this.connectedUsers.keys()),
+      socketIds: Array.from(this.connectedUsers.values()),
+    };
+  }
+
+  // Disconnect a specific user
+  disconnectUser(userId: string): void {
+    const socketId = this.connectedUsers.get(userId);
+    if (socketId) {
+      const socket = this.io.sockets.sockets.get(socketId);
+      if (socket) {
+        socket.disconnect();
+        console.log(`🔌 Disconnected user ${userId}`);
+      }
+    }
   }
 }

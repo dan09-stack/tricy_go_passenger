@@ -1,7 +1,7 @@
 // lib/core/constants/api_constants.dart
 class ApiConstants {
-  static const String baseUrl = 'http://localhost:3000/api';
-  static const String socketUrl = 'http://localhost:3000';
+  static const String baseUrl = 'http://192.168.0.199:3000/api';
+  static const String socketUrl = 'http://192.168.0.199:3000';
   
   // Auth endpoints
   static const String sendOtp = '/auth/send-otp';

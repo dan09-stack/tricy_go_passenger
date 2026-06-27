@@ -15,7 +15,7 @@ class ApiSocket {
   String get socketUrl {
     return const String.fromEnvironment(
       'SOCKET_URL',
-      defaultValue: 'http://localhost:3000',
+      defaultValue: 'http://192.168.0.199:3000',
     );
   }
 

@@ -18,12 +18,22 @@ dotenv.config();
 
 const app = express();
 const server = createServer(app);
+
+// Configure Socket.IO with proper CORS and WebSocket settings
 const io = new SocketServer(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: '*', // Allow all origins for development
     methods: ['GET', 'POST'],
     credentials: true,
   },
+  // Add these options for better WebSocket handling
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  path: '/socket.io',
+  // Allow upgrades from polling to websocket
+  allowUpgrades: true,
 });
 
 // Rate limiting
@@ -31,19 +41,32 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
+  // Skip rate limiting for WebSocket upgrade requests
+  skip: (req: Request) => {
+    return req.path === '/socket.io' || req.path.startsWith('/socket.io/');
+  }
 });
 
 // Middleware
-app.use(helmet());
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
-  credentials: true,
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "unsafe-none" },
 }));
+
+// CORS middleware
+app.use(cors({
+  origin: '*', // Allow all origins for development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', limiter);
 
-// Socket.io service
+// Socket.io service - initialize after CORS setup
 const socketService = new SocketService(io);
 socketService.initialize();
 
@@ -61,7 +84,8 @@ app.get('/health', (_req: Request, res: Response) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
-    database: process.env.USE_MONGODB === 'true' ? 'MongoDB' : 'JSON File'
+    database: process.env.USE_MONGODB === 'true' ? 'MongoDB' : 'JSON File',
+    socketIO: io.engine?.clientsCount || 0,
   });
 });
 
@@ -72,7 +96,6 @@ app.use(errorHandler);
 const startServer = async () => {
   try {
     // Connect to database (JSON or MongoDB)
-    const dbAdapter = createDatabaseAdapter();
     await dbAdapter.connect();
     
     const PORT = process.env.PORT || 3000;
@@ -81,6 +104,8 @@ const startServer = async () => {
       console.log(`📡 Environment: ${process.env.NODE_ENV}`);
       console.log(`📦 Database: ${process.env.USE_MONGODB === 'true' ? 'MongoDB' : 'JSON File'}`);
       console.log(`🔄 Socket.io enabled`);
+      console.log(`📍 Socket.io path: /socket.io`);
+      console.log(`🔗 Health check: http://localhost:${PORT}/health`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

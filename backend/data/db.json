@@ -9,6 +9,56 @@
       "id": "4aa23899-f413-4336-a64e-9c491a4c907d",
       "createdAt": "2026-06-26T22:12:13.136Z",
       "updatedAt": "2026-06-26T22:12:19.168Z"
+    },
+    {
+      "phoneNumber": "9879879874",
+      "code": "123456",
+      "expiresAt": "2026-06-27T07:29:38.703Z",
+      "isUsed": false,
+      "attempts": 0,
+      "id": "2f7585ca-50b0-4eaa-802d-dd94ac92e47f",
+      "createdAt": "2026-06-27T07:24:39.019Z",
+      "updatedAt": "2026-06-27T07:24:39.020Z"
+    },
+    {
+      "phoneNumber": "9876549871",
+      "code": "123456",
+      "expiresAt": "2026-06-27T07:31:22.254Z",
+      "isUsed": false,
+      "attempts": 0,
+      "id": "647342e4-f93d-4612-8de6-35300a82dfe9",
+      "createdAt": "2026-06-27T07:26:22.261Z",
+      "updatedAt": "2026-06-27T07:26:22.261Z"
+    },
+    {
+      "phoneNumber": "9876543121",
+      "code": "123456",
+      "expiresAt": "2026-06-27T07:41:43.333Z",
+      "isUsed": false,
+      "attempts": 0,
+      "id": "7f0bba9b-6371-4462-9bc6-7b721fb87dad",
+      "createdAt": "2026-06-27T07:36:43.337Z",
+      "updatedAt": "2026-06-27T07:36:43.337Z"
+    },
+    {
+      "phoneNumber": "9876543211",
+      "code": "123456",
+      "expiresAt": "2026-06-27T07:42:45.311Z",
+      "isUsed": false,
+      "attempts": 0,
+      "id": "7e9c0a26-5c66-4a29-88d1-cd9f149b7cf5",
+      "createdAt": "2026-06-27T07:37:45.316Z",
+      "updatedAt": "2026-06-27T07:37:45.316Z"
+    },
+    {
+      "phoneNumber": "9876543211",
+      "code": "123456",
+      "expiresAt": "2026-06-27T07:47:25.224Z",
+      "isUsed": false,
+      "attempts": 0,
+      "id": "907baa50-1722-47ac-a43d-e408e3e04f10",
+      "createdAt": "2026-06-27T07:42:25.228Z",
+      "updatedAt": "2026-06-27T07:42:25.228Z"
     }
   ],
   "users": [
@@ -36,6 +86,84 @@
       "id": "3a7cf134-ccdd-43ee-8e42-412f70eb3e3e",
       "createdAt": "2026-06-26T22:12:19.207Z",
       "updatedAt": "2026-06-26T22:12:19.207Z"
+    },
+    {
+      "phoneNumber": "9876549871",
+      "fullName": "Dev User",
+      "email": null,
+      "isVerified": true,
+      "rating": 0,
+      "totalRides": 0,
+      "isDriver": false,
+      "driverProfile": {
+        "vehicleType": "",
+        "plateNumber": "",
+        "isAvailable": false,
+        "location": {
+          "lat": 0,
+          "lng": 0
+        }
+      },
+      "preferences": {
+        "notifications": true,
+        "emailUpdates": true,
+        "smsUpdates": true
+      },
+      "id": "398b00d5-5398-450f-9122-7c77adc33422",
+      "createdAt": "2026-06-27T07:26:36.809Z",
+      "updatedAt": "2026-06-27T07:26:36.809Z"
+    },
+    {
+      "phoneNumber": "9876543121",
+      "fullName": "Dev User",
+      "email": null,
+      "isVerified": true,
+      "rating": 0,
+      "totalRides": 0,
+      "isDriver": false,
+      "driverProfile": {
+        "vehicleType": "",
+        "plateNumber": "",
+        "isAvailable": false,
+        "location": {
+          "lat": 0,
+          "lng": 0
+        }
+      },
+      "preferences": {
+        "notifications": true,
+        "emailUpdates": true,
+        "smsUpdates": true
+      },
+      "id": "ba002831-e876-47f2-b5f7-c49e8889f809",
+      "createdAt": "2026-06-27T07:36:48.159Z",
+      "updatedAt": "2026-06-27T07:36:48.159Z"
+    },
+    {
+      "phoneNumber": "9876543211",
+      "fullName": "Dev User",
+      "email": null,
+      "isVerified": true,
+      "rating": 0,
+      "totalRides": 0,
+      "isDriver": false,
+      "driverProfile": {
+        "vehicleType": "",
+        "plateNumber": "",
+        "isAvailable": false,
+        "location": {
+          "lat": 0,
+          "lng": 0
+        }
+      },
+      "preferences": {
+        "notifications": true,
+        "emailUpdates": true,
+        "smsUpdates": true
+      },
+      "id": "c4920e6b-1683-4bd3-9333-d530e366b229",
+      "createdAt": "2026-06-27T07:42:29.034Z",
+      "updatedAt": "2026-06-27T07:42:29.034Z"
     }
   ]
 }
