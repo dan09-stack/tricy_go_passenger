@@ -18,6 +18,11 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStat
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    // Add listener to rebuild when tab changes
+    _tabController.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -42,7 +47,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStat
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryYellow.withOpacity(0.1),
+                      color: AppTheme.primaryYellow.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -53,7 +58,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStat
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'TriGo',
+                    'TricyGo',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
@@ -72,38 +77,50 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStat
                 ],
               ),
             ),
+            
             // Tab Bar
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
                 color: AppTheme.darkGray,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  width: 1,
+                ),
               ),
               child: TabBar(
-                controller: _tabController,
+                controller: _tabController, // ✅ Must be connected
                 indicator: BoxDecoration(
                   color: AppTheme.primaryYellow,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                labelColor: AppTheme.darkGray,
-                unselectedLabelColor: Colors.grey,
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelColor: AppTheme.darkGray, // Color when selected
+                unselectedLabelColor: Colors.grey, // Color when not selected
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Poppins',
+                  fontSize: 16,
                 ),
                 unselectedLabelStyle: const TextStyle(
                   fontFamily: 'Roboto',
+                  fontSize: 14,
                 ),
                 tabs: const [
                   Tab(text: 'Sign In'),
                   Tab(text: 'Sign Up'),
                 ],
+             
               ),
             ),
+            
+            const SizedBox(height: 16),
+            
             // Tab Views
             Expanded(
               child: TabBarView(
-                controller: _tabController,
+                controller: _tabController, // ✅ Must use same controller
                 children: const [
                   SignInScreen(),
                   SignUpScreen(),

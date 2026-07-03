@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TriGo',
+      title: 'TricyGo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       home: const AuthScreen(), // ← This should be the correct AuthScreen

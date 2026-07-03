@@ -96,7 +96,7 @@ class _PassengerAuthScreenState extends ConsumerState<PassengerAuthScreen>
     // Build the appropriate screen based on current state
     switch (authState.currentState) {
       case AuthScreenState.welcome:
-        return const AuthWelcomeBody();
+        return const AuthWelcomeBody(); 
       case AuthScreenState.phoneInput:
         return const AuthPhoneInputBody();
       case AuthScreenState.otpVerification:
