@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tricygo_passenger/core/theme.dart';
+import 'package:tricygo_passenger/features/home/home_screen.dart';
 import 'package:tricygo_passenger/features/home/presentation/screens/login_screen.dart';
 import 'package:tricygo_passenger/features/home/presentation/screens/signup_screen.dart';
+import 'package:tricygo_passenger/core/network/api_client.dart';
+import 'package:tricygo_passenger/core/constants/api_constants.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -13,6 +18,7 @@ class AuthScreen extends ConsumerStatefulWidget {
 
 class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStateMixin {
   late TabController _tabController;
+  bool _isDevLoginLoading = false;
 
   @override
   void initState() {
@@ -31,6 +37,71 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStat
     super.dispose();
   }
 
+  // ==================== DEV LOGIN ====================
+  
+  Future<void> _handleDevLogin() async {
+    setState(() {
+      _isDevLoginLoading = true;
+    });
+
+    try {
+      final apiClient = ApiClient();
+      
+      // Call dev login endpoint
+      final response = await apiClient.post(
+        ApiConstants.devLogin,
+        body: {
+          'phoneNumber': '09123456789',
+          'fullName': 'Dev User',
+        },
+      );
+
+      if (response['success'] == true) {
+        // Save token and user data
+        final token = response['data']['token'] as String;
+        final user = response['data']['user'] as Map<String, dynamic>;
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userToken', token);
+        await prefs.setString('userData', jsonEncode(user));
+        await prefs.setString('fullName', 'Dev User');
+        
+        // Navigate to home
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PassengerHomeScreen(),
+            ),
+          );
+        }
+      } else {
+        _showSnackBar('Dev login failed: ${response['message'] ?? 'Unknown error'}');
+      }
+    } catch (e) {
+      _showSnackBar('Dev login error: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDevLoginLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // ==================== BUILD ====================
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,14 +161,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStat
                 ),
               ),
               child: TabBar(
-                controller: _tabController, // ✅ Must be connected
+                controller: _tabController,
                 indicator: BoxDecoration(
                   color: AppTheme.primaryYellow,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: AppTheme.darkGray, // Color when selected
-                unselectedLabelColor: Colors.grey, // Color when not selected
+                labelColor: AppTheme.darkGray,
+                unselectedLabelColor: Colors.grey,
                 labelStyle: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Poppins',
@@ -111,7 +182,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStat
                   Tab(text: 'Sign In'),
                   Tab(text: 'Sign Up'),
                 ],
-             
               ),
             ),
             
@@ -120,11 +190,80 @@ class _AuthScreenState extends ConsumerState<AuthScreen> with TickerProviderStat
             // Tab Views
             Expanded(
               child: TabBarView(
-                controller: _tabController, // ✅ Must use same controller
+                controller: _tabController, 
                 children: const [
                   SignInScreen(),
                   SignUpScreen(),
                 ],
+              ),
+            ),
+            
+            // Dev Login Button at Bottom
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.darkGray,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.developer_mode,
+                      color: Colors.grey,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Dev Login',
+                      style: TextStyle(
+                        color: Colors.grey.withValues(alpha: 0.7),
+                        fontSize: 14,
+                        fontFamily: 'Roboto',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    SizedBox(
+                      height: 32,
+                      child: ElevatedButton(
+                        onPressed: _isDevLoginLoading ? null : _handleDevLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryYellow,
+                          foregroundColor: AppTheme.darkGray,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isDevLoginLoading
+                            ? const SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppTheme.darkGray,
+                                ),
+                              )
+                            : const Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'Poppins',
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
